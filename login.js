@@ -20,6 +20,25 @@
     errorBox.classList.remove('show');
   }
 
+  function showRedirectReasonMessage() {
+    var params = new URLSearchParams(window.location.search);
+    var reason = params.get('reason');
+
+    if (reason === 'staff_missing') {
+      showError('Your login exists, but no active Hilltop staff profile is linked to this account. Please contact the system administrator.');
+      return;
+    }
+
+    if (reason === 'inactive') {
+      showError('Your staff account is inactive. Please contact the system administrator.');
+      return;
+    }
+
+    if (reason === 'session_expired') {
+      showError('Your session has expired. Please sign in again.');
+    }
+  }
+
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;
     submitBtn.classList.toggle('loading', isLoading);
@@ -46,6 +65,7 @@
     console.info('Supabase client is not ready yet. The login form will show an error only if sign-in is attempted.');
   }
 
+  showRedirectReasonMessage();
   redirectIfAlreadyLoggedIn();
 
   form.addEventListener('submit', async function(event) {

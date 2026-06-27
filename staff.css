@@ -917,6 +917,11 @@
 .action-btn.small { padding: 7px 13px; font-size: 12px; }
 .action-btn.small svg { width: 13px; height: 13px; }
 
+.manage-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ── TOAST ───────────────────────────────────────────────────── */
 .toast {
   position: fixed;

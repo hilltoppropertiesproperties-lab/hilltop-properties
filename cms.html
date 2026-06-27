@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website CMS — Hilltop Properties Zambia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="properties.css" />
+  <link rel="stylesheet" href="cms.css" />
+</head>
+<body>
+
+  <!-- MOBILE SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- MODAL OVERLAY (shared by all modals) -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">H</div>
+      <div class="brand-text">
+        <span class="brand-name">Hilltop</span>
+        <span class="brand-sub">Properties Zambia</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="nav-item" data-page="dashboard">
+          <a href="index.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="properties">
+          <a href="properties.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+            <span class="nav-label">Properties</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="leads">
+          <a href="leads.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span>
+            <span class="nav-label">Leads</span>
+          </a>
+        </li>
+        <li class="nav-item" data-page="staff">
+          <a href="staff.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4"/></svg></span>
+            <span class="nav-label">Staff &amp; Branches</span>
+          </a>
+        </li>
+        <li class="nav-item active" data-page="cms">
+          <a href="cms.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+            <span class="nav-label">Website CMS</span>
+          </a>
+          <span class="nav-active-bar"></span>
+        </li>
+        <li class="nav-item" data-page="settings">
+          <a href="settings.html" class="nav-link">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>
+            <span class="nav-label">Settings</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-avatar">A</div>
+      <div class="admin-info">
+        <span class="admin-name">Admin User</span>
+        <span class="admin-role">Super Admin</span>
+      </div>
+      <button class="logout-btn" type="button" data-logout-button>Logout</button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content" id="mainContent">
+
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="header-titles">
+          <h1 class="page-title">Website Content Management</h1>
+          <p class="page-subtitle">Manage homepage content, banners, team profiles, testimonials, and featured website sections</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <p class="welcome-msg">Welcome back, <strong>Admin</strong></p>
+        <div class="branch-filter" id="branchFilter">
+          <button class="branch-btn active" data-branch="all">All Branches</button>
+          <button class="branch-btn" data-branch="lusaka">Lusaka</button>
+          <button class="branch-btn" data-branch="livingstone">Livingstone</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+
+      <!-- CMS STATS -->
+      <section class="stats-grid cms-stats" id="cmsStatsGrid">
+        <div class="stat-card" data-accent="blue">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+          </div>
+          <div class="stat-body">
+            <p class="stat-label">Active Banners</p>
+            <p class="stat-number" id="statBanners">0</p>
+            <p class="stat-helper">Live on website</p>
+          </div>
+        </div>
+        <div class="stat-card" data-accent="green">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="stat-body">
+            <p class="stat-label">Team Profiles</p>
+            <p class="stat-number" id="statTeam">0</p>
+            <p class="stat-helper">Visible on website</p>
+          </div>
+        </div>
+        <div class="stat-card" data-accent="gold">
+          <div class="stat-icon gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div class="stat-body">
+            <p class="stat-label">Published Testimonials</p>
+            <p class="stat-number" id="statTestimonials">0</p>
+            <p class="stat-helper">Client reviews live</p>
+          </div>
+        </div>
+        <div class="stat-card" data-accent="teal">
+          <div class="stat-icon teal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="stat-body">
+            <p class="stat-label">Featured Properties</p>
+            <p class="stat-number" id="statFeatured">0</p>
+            <p class="stat-helper">On homepage</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CMS SECTION TABS -->
+      <div class="cms-tabs-bar">
+        <button class="cms-tab active" data-section="homepage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Homepage
+        </button>
+        <button class="cms-tab" data-section="banners">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+          Banners
+        </button>
+        <button class="cms-tab" data-section="team">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Team Profiles
+        </button>
+        <button class="cms-tab" data-section="testimonials">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Testimonials
+        </button>
+        <button class="cms-tab" data-section="featured">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Featured Props
+        </button>
+        <button class="cms-tab" data-section="news">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          News / Articles
+        </button>
+      </div>
+
+      <!-- SEARCH + FILTER BAR (shown for most tabs) -->
+      <div class="cms-filter-bar" id="cmsFilterBar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="cmsSearch" class="search-input" placeholder="Search by title, name, or reference…" />
+        </div>
+        <select id="cmsStatusFilter" class="filter-select">
+          <option value="all">All Statuses</option>
+          <option value="Published">Published</option>
+          <option value="Draft">Draft</option>
+          <option value="Active">Active</option>
+          <option value="Hidden">Hidden</option>
+          <option value="Pending">Pending</option>
+          <option value="Visible">Visible</option>
+        </select>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           CMS SECTION PANELS
+           Only one panel is visible at a time.
+           JavaScript toggles the 'active' class.
+      ════════════════════════════════════════════════════════ -->
+
+      <!-- ── HOMEPAGE CONTENT ── -->
+      <section class="cms-panel active" id="panel-homepage">
+        <div class="cms-panel-header">
+          <h2 class="cms-panel-title">Homepage Content</h2>
+          <p class="cms-panel-desc">Edit the main text blocks displayed on the public website homepage.</p>
+        </div>
+
+        <div class="homepage-form-grid">
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+              Hero Section
+            </h3>
+            <div class="form-group full">
+              <label>Hero Headline</label>
+              <input type="text" id="hpHeroHeadline" />
+            </div>
+            <div class="form-group full">
+              <label>Hero Subtitle</label>
+              <textarea id="hpHeroSubtitle" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>CTA Button Text</label>
+                <input type="text" id="hpCtaText" />
+              </div>
+              <div class="form-group half">
+                <label>CTA Button Link</label>
+                <input type="url" id="hpCtaLink" placeholder="https://…" />
+              </div>
+            </div>
+          </div>
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              About &amp; Services Preview
+            </h3>
+            <div class="form-group full">
+              <label>About Preview Text</label>
+              <textarea id="hpAboutText" rows="3"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Services Preview Text</label>
+              <textarea id="hpServicesText" rows="3"></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="homepage-actions">
+          <button class="action-btn outline" id="btnHpDraft">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/></svg>
+            Save Draft
+          </button>
+          <button class="action-btn secondary" id="btnHpPreview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+          <button class="action-btn primary" id="btnHpPublish">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Publish Changes
+          </button>
+        </div>
+      </section>
+
+      <!-- ── BANNERS ── -->
+      <section class="cms-panel" id="panel-banners">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">Banner / Slider Management</h2>
+            <p class="cms-panel-desc">Manage the rotating banners displayed at the top of the public website.</p>
+          </div>
+          <button class="action-btn primary" id="btnAddBanner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add New Banner
+          </button>
+        </div>
+        <div class="cms-grid" id="bannerGrid"><!-- JS renders here --></div>
+        <div class="empty-state" id="bannerEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+          <h3>No banners found</h3>
+          <p>Add your first banner to get started.</p>
+          <button class="action-btn primary" onclick="openCmsModal('banner','add')">Add New Banner</button>
+        </div>
+      </section>
+
+      <!-- ── TEAM PROFILES ── -->
+      <section class="cms-panel" id="panel-team">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">Team / Agent Profiles</h2>
+            <p class="cms-panel-desc">Manage the team profiles displayed on the public website.</p>
+          </div>
+          <button class="action-btn primary" id="btnAddTeam">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Team Profile
+          </button>
+        </div>
+        <div class="cms-grid team-grid" id="teamGrid"><!-- JS renders here --></div>
+        <div class="empty-state" id="teamEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <h3>No team profiles found</h3>
+          <p>Add team members to display them on the website.</p>
+        </div>
+      </section>
+
+      <!-- ── TESTIMONIALS ── -->
+      <section class="cms-panel" id="panel-testimonials">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">Testimonials</h2>
+            <p class="cms-panel-desc">Manage client testimonials shown on the public website.</p>
+          </div>
+          <button class="action-btn primary" id="btnAddTestimonial">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Testimonial
+          </button>
+        </div>
+        <div class="cms-list" id="testimonialList"><!-- JS renders here --></div>
+        <div class="empty-state" id="testimonialEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <h3>No testimonials found</h3>
+          <p>Add a testimonial or adjust your filters.</p>
+        </div>
+      </section>
+
+      <!-- ── FEATURED PROPERTIES ── -->
+      <section class="cms-panel" id="panel-featured">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">Featured Properties</h2>
+            <p class="cms-panel-desc">Control which properties appear on the public website homepage.</p>
+          </div>
+        </div>
+        <div class="info-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Only Active properties should appear on the public website. Featured order can be adjusted using the Move Up / Move Down controls.
+        </div>
+        <div class="featured-table-wrap">
+          <table class="prop-table featured-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Reference</th>
+                <th>Property</th>
+                <th>Branch</th>
+                <th>Purpose</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Featured</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="featuredTableBody"><!-- JS renders here --></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── NEWS / ARTICLES ── -->
+      <section class="cms-panel" id="panel-news">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">News / Articles</h2>
+            <p class="cms-panel-desc">Manage blog posts and news articles for the public website.</p>
+          </div>
+          <button class="action-btn primary" id="btnAddArticle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Article
+          </button>
+        </div>
+        <div class="cms-list" id="articleList"><!-- JS renders here --></div>
+        <div class="empty-state" id="articleEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          <h3>No articles found</h3>
+          <p>Create your first article or adjust your search.</p>
+        </div>
+      </section>
+
+    </div><!-- end page-body -->
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CMS MODAL (single modal reused for all content types)
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="prop-modal cms-modal" id="cmsModal" role="dialog" aria-modal="true">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="cmsModalTitle">Add Content</h2>
+          <p class="modal-subtitle" id="cmsModalSubtitle">Fill in the details below.</p>
+        </div>
+        <button class="modal-close" id="cmsModalClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal body — content injected dynamically by JS -->
+      <div class="modal-form-body" id="cmsModalBody">
+        <!-- Injected by JavaScript -->
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="action-btn outline" id="cmsModalCancel">Cancel</button>
+        <button type="button" class="action-btn primary" id="cmsModalSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- SCRIPTS — load order matters -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="auth-guard.js"></script>
+  <script src="cms.js"></script>
+</body>
+</html>

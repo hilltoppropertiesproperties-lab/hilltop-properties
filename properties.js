@@ -1,6 +1,9 @@
 /* ============================================================
    HILLTOP PROPERTIES ZAMBIA — MODULE 2: PROPERTY MANAGEMENT
    properties.js
+   Phase 3A: read-only Supabase loading.
+   Phase 3B will add property create/update/archive safely.
+   Phase 3C will add property images/documents storage.
    ============================================================ */
 
 
@@ -258,10 +261,352 @@ var currentBranch  = 'all';
 var currentSearch  = '';
 var currentStatus  = 'all';
 var currentPurpose = 'all';
+var isUsingSupabaseProperties = false;
+var propertyBranches = [];
+var propertyStaff = [];
 
 
 /* ══════════════════════════════════════════════════════════════
-   4. FILTER & RENDER PROPERTIES
+   4. SUPABASE READ-ONLY LOADING
+   Phase 3A: read-only Supabase loading.
+   Phase 3B will add property create/update/archive safely.
+   Phase 3C will add property images/documents storage.
+══════════════════════════════════════════════════════════════ */
+
+function getSupabaseClient() {
+  return window.hilltopSupabase || null;
+}
+
+function waitForCurrentStaffProfile() {
+  return new Promise(function(resolve) {
+    var attempts = 0;
+    var maxAttempts = 200;
+
+    function checkProfile() {
+      if (window.hilltopCurrentUser && window.hilltopCurrentUser.id) {
+        resolve(window.hilltopCurrentUser);
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts >= maxAttempts) {
+        resolve(null);
+        return;
+      }
+
+      window.setTimeout(checkProfile, 50);
+    }
+
+    checkProfile();
+  });
+}
+
+function cleanBranchName(name) {
+  if (!name) return 'Unassigned';
+  return name.replace(/\s+Branch$/i, '').trim();
+}
+
+function getCurrentUserRole() {
+  return (window.hilltopCurrentUser || {}).role || '';
+}
+
+function isCurrentUserSuperAdmin() {
+  var role = getCurrentUserRole();
+  return role === 'super_admin' || role === 'Super Admin';
+}
+
+function isCurrentUserBranchManager() {
+  var role = getCurrentUserRole();
+  return role === 'branch_manager' || role === 'Branch Manager';
+}
+
+function canCreateProperty() {
+  return isCurrentUserSuperAdmin() || isCurrentUserBranchManager();
+}
+
+function canManageProperty(property) {
+  var profile = window.hilltopCurrentUser || {};
+  if (isCurrentUserSuperAdmin()) return true;
+  if (isCurrentUserBranchManager()) {
+    return property && String(property.branchId) === String(profile.branch_id);
+  }
+  return false;
+}
+
+function requirePropertyManagePermission(property) {
+  if (property ? canManageProperty(property) : canCreateProperty()) return true;
+  showToast('You do not have permission to manage this property.', 'error');
+  return false;
+}
+
+function formatPrice(price, purpose) {
+  var numericPrice = Number(price || 0);
+  var formatted = 'ZMW ' + numericPrice.toLocaleString('en-ZM', {
+    maximumFractionDigits: numericPrice % 1 === 0 ? 0 : 2
+  });
+
+  return purpose === 'For Rent' ? formatted + ' / month' : formatted;
+}
+
+function parsePrice(value) {
+  var cleaned = String(value || '').replace(/ZMW/gi, '').replace(/\/ month/gi, '').replace(/,/g, '').trim();
+  var parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parseAmenities(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map(function(item) { return item.trim(); })
+    .filter(Boolean);
+}
+
+function findPropertyBranchId(value) {
+  if (!value) return null;
+
+  var byId = propertyBranches.find(function(branch) {
+    return String(branch.id) === String(value);
+  });
+  if (byId) return byId.id;
+
+  var byName = propertyBranches.find(function(branch) {
+    return cleanBranchName(branch.name).toLowerCase() === cleanBranchName(value).toLowerCase();
+  });
+  return byName ? byName.id : null;
+}
+
+function getCurrentBranchIdForWrite(selectedValue) {
+  var profile = window.hilltopCurrentUser || {};
+  if (isCurrentUserBranchManager()) return profile.branch_id || null;
+  return findPropertyBranchId(selectedValue);
+}
+
+function hasPendingMediaOrDocumentFiles() {
+  var documentInputs = ['docFloorPlan', 'docTitleDeed', 'docLease', 'docOther'];
+  var hasDocs = documentInputs.some(function(id) {
+    var input = document.getElementById(id);
+    return input && input.files && input.files.length > 0;
+  });
+
+  return stagedImages.length > 0 || hasDocs;
+}
+
+function groupRowsByPropertyId(rows) {
+  return (rows || []).reduce(function(grouped, row) {
+    var propertyId = String(row.property_id);
+    if (!grouped[propertyId]) grouped[propertyId] = [];
+    grouped[propertyId].push(row);
+    return grouped;
+  }, {});
+}
+
+function mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty, documentsByProperty) {
+  var branch = branchLookup[String(record.branch_id)] || null;
+  var agent = record.assigned_agent_id ? staffLookup[String(record.assigned_agent_id)] : null;
+  var images = imagesByProperty[String(record.id)] || [];
+  var documents = documentsByProperty[String(record.id)] || [];
+  var coverImage = images.find(function(image) { return image.is_cover; }) || images[0] || null;
+
+  return {
+    id: record.id,
+    ref: record.reference_number,
+    title: record.title,
+    description: record.description || '',
+    price: formatPrice(record.price, record.purpose),
+    priceValue: Number(record.price || 0),
+    purpose: record.purpose,
+    type: record.property_type,
+    branch: branch ? cleanBranchName(branch.name) : 'Unassigned',
+    branchId: record.branch_id || null,
+    agent: agent ? agent.full_name : 'Unassigned',
+    agentId: record.assigned_agent_id || null,
+    area: record.area || '',
+    address: record.full_address || '',
+    beds: Number(record.bedrooms || 0),
+    baths: Number(record.bathrooms || 0),
+    garages: Number(record.garages || 0),
+    size: Number(record.square_metres || 0),
+    status: record.status,
+    featured: record.featured ? 'Yes' : 'No',
+    amenities: Array.isArray(record.amenities) ? record.amenities.join(', ') : '',
+    virtualTour: record.virtual_tour_link || '',
+    youtube: record.youtube_link || '',
+    coverImage: coverImage ? coverImage.image_url : '',
+    images: images,
+    documents: documents,
+    createdAt: record.created_at || '',
+    updatedAt: record.updated_at || ''
+  };
+}
+
+function shouldDisplayForCurrentUser(property) {
+  var profile = window.hilltopCurrentUser || {};
+  var role = profile.role;
+
+  if (!profile.id || role === 'super_admin' || role === 'Super Admin') return true;
+  if (!profile.branch_id) return true;
+
+  return String(property.branchId) === String(profile.branch_id);
+}
+
+function showPropertiesLoadingState() {
+  emptyState.style.display = 'none';
+  propTable.style.display = 'table';
+  propTableBody.innerHTML = '<tr><td colspan="11" style="padding:18px;color:var(--text-light);">Loading properties from Supabase...</td></tr>';
+  propCards.innerHTML = '<div class="prop-card" style="padding:18px;color:var(--text-light);">Loading properties from Supabase...</div>';
+}
+
+function populatePropertyBranchSelect() {
+  var branchSelect = document.getElementById('fBranch');
+  if (!branchSelect || propertyBranches.length === 0) return;
+
+  var selectedValue = branchSelect.value;
+  branchSelect.innerHTML = '<option value="">Select...</option>';
+
+  propertyBranches.forEach(function(branch) {
+    var cleanName = cleanBranchName(branch.name);
+    var opt = document.createElement('option');
+    opt.value = cleanName;
+    opt.textContent = cleanName;
+    branchSelect.appendChild(opt);
+  });
+
+  branchSelect.value = selectedValue;
+}
+
+async function loadBranchesForProperties() {
+  var response = await getSupabaseClient()
+    .from('branches')
+    .select('id, name')
+    .order('name', { ascending: true });
+
+  if (response.error) {
+    throw new Error('Unable to load branches for properties: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadStaffForProperties() {
+  var response = await getSupabaseClient()
+    .from('staff_users')
+    .select('id, full_name, role, branch_id')
+    .order('full_name', { ascending: true });
+
+  if (response.error) {
+    throw new Error('Unable to load staff for properties: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadPropertiesFromSupabase() {
+  var response = await getSupabaseClient()
+    .from('properties')
+    .select('id, reference_number, title, description, price, purpose, property_type, branch_id, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, amenities, virtual_tour_link, youtube_link, assigned_agent_id, created_at, updated_at')
+    .order('created_at', { ascending: false });
+
+  if (response.error) {
+    throw new Error('Unable to load properties from Supabase: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadPropertyImagesFromSupabase() {
+  var response = await getSupabaseClient()
+    .from('property_images')
+    .select('property_id, image_url, display_order, is_cover')
+    .order('display_order', { ascending: true });
+
+  if (response.error) {
+    throw new Error('Unable to load property images from Supabase: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadPropertyDocumentsFromSupabase() {
+  var response = await getSupabaseClient()
+    .from('property_documents')
+    .select('property_id, document_name, document_type, document_url, created_at')
+    .order('created_at', { ascending: false });
+
+  if (response.error) {
+    throw new Error('Unable to load property documents from Supabase: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadPropertyModuleData() {
+  if (!getSupabaseClient()) {
+    showToast('Supabase is not available. Showing development sample property data.', 'error');
+    renderProperties();
+    return;
+  }
+
+  showPropertiesLoadingState();
+
+  try {
+    var currentStaffProfile = await waitForCurrentStaffProfile();
+
+    if (!currentStaffProfile) {
+      showToast('Staff profile is still being verified. Please refresh after login completes.', 'error');
+      renderProperties();
+      return;
+    }
+
+    var branchRows = await loadBranchesForProperties();
+    var staffRows = await loadStaffForProperties();
+    var propertyRows = await loadPropertiesFromSupabase();
+    var imageRows = await loadPropertyImagesFromSupabase();
+    var documentRows = await loadPropertyDocumentsFromSupabase();
+    var branchLookup = {};
+    var staffLookup = {};
+
+    branchRows.forEach(function(branch) {
+      branchLookup[String(branch.id)] = branch;
+    });
+    propertyBranches = branchRows;
+
+    staffRows.forEach(function(staff) {
+      staffLookup[String(staff.id)] = staff;
+    });
+
+    var imagesByProperty = groupRowsByPropertyId(imageRows);
+    var documentsByProperty = groupRowsByPropertyId(documentRows);
+    var unresolvedBranchCount = propertyRows.filter(function(row) {
+      return row.branch_id && !branchLookup[String(row.branch_id)];
+    }).length;
+
+    properties = propertyRows
+      .map(function(record) {
+        return mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty, documentsByProperty);
+      })
+      .filter(shouldDisplayForCurrentUser);
+
+    isUsingSupabaseProperties = true;
+
+    if (unresolvedBranchCount > 0) {
+      showToast('Properties loaded, but branch names could not be resolved.', 'error');
+    } else {
+      showToast('Properties loaded from Supabase.', 'success');
+    }
+
+    renderProperties();
+  } catch (error) {
+    console.warn('Properties Supabase loading failed.', error);
+    showToast(error.message || 'Unable to load properties from Supabase. Showing development sample data.', 'error');
+    renderProperties();
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. FILTER & RENDER PROPERTIES
 ══════════════════════════════════════════════════════════════ */
 
 /**
@@ -272,7 +617,7 @@ function getFilteredProperties() {
   return properties.filter(function(p) {
     // Branch filter
     if (currentBranch !== 'all') {
-      if (p.branch.toLowerCase() !== currentBranch) return false;
+      if ((p.branch || '').toLowerCase() !== currentBranch) return false;
     }
     // Status filter
     if (currentStatus !== 'all' && p.status !== currentStatus) return false;
@@ -281,9 +626,10 @@ function getFilteredProperties() {
     // Search filter — title, area, or ref
     if (currentSearch) {
       var q = currentSearch.toLowerCase();
-      var match = p.title.toLowerCase().includes(q)
-               || p.area.toLowerCase().includes(q)
-               || p.ref.toLowerCase().includes(q);
+      var match = (p.title || '').toLowerCase().includes(q)
+               || (p.area || '').toLowerCase().includes(q)
+               || (p.ref || '').toLowerCase().includes(q)
+               || (p.agent || '').toLowerCase().includes(q);
       if (!match) return false;
     }
     return true;
@@ -310,6 +656,7 @@ function getBadgeClass(status) {
  * from the currently filtered properties.
  */
 function renderProperties() {
+  populatePropertyBranchSelect();
   var filtered = getFilteredProperties();
 
   // Update stats from full filtered data
@@ -474,21 +821,21 @@ function handleTableAction(e) {
 
   // View button
   if (target.closest('.btn-view')) {
-    var id = parseInt(target.closest('.btn-view').dataset.id);
+    var id = target.closest('.btn-view').dataset.id;
     viewProperty(id);
     return;
   }
 
   // Edit button
   if (target.closest('.btn-edit')) {
-    var id = parseInt(target.closest('.btn-edit').dataset.id);
+    var id = target.closest('.btn-edit').dataset.id;
     openEditModal(id);
     return;
   }
 
   // Delete button
   if (target.closest('.btn-delete')) {
-    var id = parseInt(target.closest('.btn-delete').dataset.id);
+    var id = target.closest('.btn-delete').dataset.id;
     deleteProperty(id);
     return;
   }
@@ -504,7 +851,7 @@ function handleTableAction(e) {
  * In a future version, this would open a read-only detail panel.
  */
 function viewProperty(id) {
-  var p = properties.find(function(x){ return x.id === id; });
+  var p = properties.find(function(x){ return String(x.id) === String(id); });
   if (!p) return;
   alert(
     'PROPERTY DETAILS\n\n' +
@@ -519,6 +866,9 @@ function viewProperty(id) {
     'Beds: ' + p.beds + '  Baths: ' + p.baths + '  Garages: ' + p.garages + '\n' +
     'Size: ' + p.size + ' m²\n' +
     'Featured: ' + p.featured + '\n' +
+    'Agent: ' + (p.agent || 'Unassigned') + '\n' +
+    'Images: ' + ((p.images || []).length) + '\n' +
+    'Documents: ' + ((p.documents || []).length) + '\n' +
     'Amenities: ' + p.amenities
   );
 }
@@ -527,13 +877,13 @@ function viewProperty(id) {
  * Removes a property from the array and re-renders.
  */
 function deleteProperty(id) {
-  var p = properties.find(function(x){ return x.id === id; });
+  var p = properties.find(function(x){ return String(x.id) === String(id); });
   if (!p) return;
-  if (!confirm('Delete "' + p.title + '"? This cannot be undone.')) return;
+  if (!confirm('Remove "' + p.title + '" from this page only? Supabase archive comes in Phase 3B.')) return;
 
-  properties = properties.filter(function(x){ return x.id !== id; });
+  properties = properties.filter(function(x){ return String(x.id) !== String(id); });
   renderProperties();
-  showToast('Property deleted', 'success');
+  showToast(isUsingSupabaseProperties ? 'Property removed from this page only. Supabase archive comes in Phase 3B.' : 'Property deleted', 'success');
 }
 
 
@@ -551,7 +901,7 @@ selectAll.addEventListener('change', function() {
 function getCheckedIds() {
   var ids = [];
   document.querySelectorAll('.row-check:checked').forEach(function(cb) {
-    ids.push(parseInt(cb.dataset.id));
+    ids.push(cb.dataset.id);
   });
   return ids;
 }
@@ -569,26 +919,26 @@ btnBulkStatus.addEventListener('click', function() {
   if (!newStatus)     { showToast('Please choose a status', 'error'); return; }
 
   ids.forEach(function(id) {
-    var p = properties.find(function(x){ return x.id === id; });
+    var p = properties.find(function(x){ return String(x.id) === String(id); });
     if (p) p.status = newStatus;
   });
 
   bulkStatusSelect.value = '';
   selectAll.checked = false;
   renderProperties();
-  showToast('Status updated for ' + ids.length + ' properties', 'success');
+  showToast(isUsingSupabaseProperties ? 'Status updated on this page only. Supabase update comes in Phase 3B.' : 'Status updated for ' + ids.length + ' properties', 'success');
 });
 
 // Bulk delete
 btnBulkDelete.addEventListener('click', function() {
   var ids = getCheckedIds();
   if (!ids.length) { showToast('No properties selected', 'error'); return; }
-  if (!confirm('Delete ' + ids.length + ' selected properties? This cannot be undone.')) return;
+  if (!confirm('Remove ' + ids.length + ' selected properties from this page only? Supabase archive comes in Phase 3B.')) return;
 
-  properties = properties.filter(function(p){ return !ids.includes(p.id); });
+  properties = properties.filter(function(p){ return !ids.includes(String(p.id)); });
   selectAll.checked = false;
   renderProperties();
-  showToast(ids.length + ' properties deleted', 'success');
+  showToast(isUsingSupabaseProperties ? ids.length + ' properties removed from this page only. Supabase archive comes in Phase 3B.' : ids.length + ' properties deleted', 'success');
 });
 
 
@@ -608,7 +958,7 @@ function openModal(mode, id) {
 
   if (mode === 'edit' && id) {
     // Find the property to edit
-    var p = properties.find(function(x){ return x.id === id; });
+    var p = properties.find(function(x){ return String(x.id) === String(id); });
     if (!p) return;
 
     modalTitle.textContent = 'Edit Property';
@@ -766,18 +1116,23 @@ propForm.addEventListener('submit', function(e) {
   var editId = editIdField.value;
 
   if (editId) {
-    // EDIT existing property
-    var idx = properties.findIndex(function(p){ return p.id === parseInt(editId); });
+    // EDIT existing property in the frontend array only.
+    var idx = properties.findIndex(function(p){ return String(p.id) === String(editId); });
     if (idx > -1) {
-      formData.id = parseInt(editId);
+      formData.id = properties[idx].id;
+      formData.branchId = properties[idx].branchId || null;
+      formData.agent = properties[idx].agent || 'Unassigned';
+      formData.agentId = properties[idx].agentId || null;
+      formData.images = properties[idx].images || [];
+      formData.documents = properties[idx].documents || [];
       properties[idx] = formData;
-      showToast('Property updated successfully', 'success');
+      showToast(isUsingSupabaseProperties ? 'Property updated in this page only. Supabase update comes in Phase 3B.' : 'Property updated successfully', 'success');
     }
   } else {
-    // ADD new property
+    // ADD new property to the frontend array only.
     formData.id = nextId++;
     properties.push(formData);
-    showToast('Property added successfully', 'success');
+    showToast(isUsingSupabaseProperties ? 'Property added in this page only. Supabase save comes in Phase 3B.' : 'Property added successfully', 'success');
   }
 
   closeModal();
@@ -946,4 +1301,4 @@ function showToast(message, type) {
    18. INITIAL RENDER ON PAGE LOAD
 ══════════════════════════════════════════════════════════════ */
 
-renderProperties();
+loadPropertyModuleData();

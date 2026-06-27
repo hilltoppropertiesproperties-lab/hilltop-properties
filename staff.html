@@ -64,7 +64,7 @@
           <span class="nav-active-bar"></span>
         </li>
         <li class="nav-item" data-page="cms">
-          <a href="#" class="nav-link">
+          <a href="cms.html" class="nav-link">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </span>
@@ -72,7 +72,7 @@
           </a>
         </li>
         <li class="nav-item" data-page="settings">
-          <a href="#" class="nav-link">
+          <a href="settings.html" class="nav-link">
             <span class="nav-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             </span>
@@ -395,6 +395,53 @@
   </div>
 
   <!-- ===================================================================
+       ADD / EDIT BRANCH MODAL
+  ==================================================================== -->
+  <div class="staff-modal" id="branchFormModal" role="dialog" aria-modal="true" aria-labelledby="branchFormModalTitle">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="branchFormModalTitle">Add New Branch</h2>
+          <p class="modal-subtitle">Manage branch profile details. Branch managers are assigned through staff roles.</p>
+        </div>
+        <button class="modal-close" id="branchFormModalClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="branchForm" novalidate>
+        <input type="hidden" id="editBranchId" value="" />
+        <div class="tab-panel active">
+          <div class="form-section-label">Branch Information</div>
+          <div class="form-row">
+            <div class="form-group full">
+              <label for="fBranchName">Branch Name <span class="req">*</span></label>
+              <input type="text" id="fBranchName" placeholder="e.g. Lusaka" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full">
+              <label for="fBranchAddress">Address</label>
+              <input type="text" id="fBranchAddress" placeholder="e.g. Kabulonga, Lusaka, Zambia" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full">
+              <label for="fBranchContact">Contact Number</label>
+              <input type="tel" id="fBranchContact" placeholder="e.g. +260 211 000 001" />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="action-btn outline" id="branchFormCancelBtn">Cancel</button>
+          <button type="submit" class="action-btn primary" id="branchFormSaveBtn">Save Branch</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================
        ADD / EDIT STAFF MODAL
   ==================================================================== -->
   <div class="staff-modal" id="staffModal" role="dialog" aria-modal="true" aria-labelledby="staffModalTitle">
@@ -441,8 +488,8 @@
               <input type="email" id="fStaffEmail" placeholder="e.g. john@hilltop.co.zm" required />
             </div>
             <div class="form-group half">
-              <label for="fStaffPhone">Phone Number <span class="req">*</span></label>
-              <input type="tel" id="fStaffPhone" placeholder="e.g. +260 977 000 111" required />
+              <label for="fStaffPhone">Phone Number</label>
+              <input type="tel" id="fStaffPhone" placeholder="e.g. +260 977 000 111" />
             </div>
           </div>
           <div class="form-row">
@@ -467,8 +514,8 @@
               </select>
             </div>
             <div class="form-group half">
-              <label for="fBranch">Branch <span class="req">*</span></label>
-              <select id="fBranch" required>
+              <label for="fBranch">Branch</label>
+              <select id="fBranch">
                 <option value="">Select branch…</option>
                 <option value="Lusaka">Lusaka</option>
                 <option value="Livingstone">Livingstone</option>

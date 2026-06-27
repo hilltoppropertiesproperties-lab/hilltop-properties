@@ -2,16 +2,14 @@
    HILLTOP PROPERTIES ZAMBIA — MODULE 4: STAFF & BRANCH MANAGEMENT
    staff.js
    ============================================================
-   All data is stored in the sample arrays below.
-   Later, this can be replaced with Supabase API calls.
-   Functions are commented to show where Supabase plugs in.
+   Phase 2A: read-only Supabase loading.
+   Phase 2B: staff and branch create/update/deactivate actions.
    ============================================================ */
 
 
 /* ══════════════════════════════════════════════════════════════
    1. SAMPLE BRANCH DATA
-   // Later: replace with Supabase fetch.
-   // const { data: branches } = await supabase.from('branches').select('*');
+   Development fallback. Supabase branches are loaded at runtime.
 ══════════════════════════════════════════════════════════════ */
 
 var branches = [
@@ -42,9 +40,8 @@ var branches = [
 
 /* ══════════════════════════════════════════════════════════════
    2. SAMPLE STAFF DATA
-   // Later: replace with Supabase fetch.
-   // const { data: staff } = await supabase.from('staff_users').select('*');
-   // Later: auth_user_id can link staff profiles to Supabase Authentication users.
+   Development fallback. Supabase staff profiles are loaded at runtime.
+   auth_user_id is never written by this module.
 ══════════════════════════════════════════════════════════════ */
 
 var staffList = [
@@ -120,8 +117,9 @@ var staffList = [
   }
 ];
 
-// Running ID counter for new staff
+// Running ID counter for frontend-only new staff
 var nextStaffId = 6;
+var isUsingSupabaseData = false;
 
 // Sample leads for the assignment panel (mirrors leads.js data)
 var sampleLeads = [
@@ -186,6 +184,14 @@ var branchModalSubtitle = document.getElementById('branchModalSubtitle');
 var branchModalBody     = document.getElementById('branchModalBody');
 var branchModalClose    = document.getElementById('branchModalClose');
 
+// Branch form modal
+var branchFormModal       = document.getElementById('branchFormModal');
+var branchFormModalTitle  = document.getElementById('branchFormModalTitle');
+var branchForm            = document.getElementById('branchForm');
+var editBranchIdField     = document.getElementById('editBranchId');
+var branchFormModalClose  = document.getElementById('branchFormModalClose');
+var branchFormCancelBtn   = document.getElementById('branchFormCancelBtn');
+
 // Lead assignment panel
 var assignLeadSelect  = document.getElementById('assignLead');
 var assignAgentSelect = document.getElementById('assignAgent');
@@ -231,10 +237,409 @@ function getAvatarClass(role) {
   return 'agent';
 }
 
+function dbRoleToLabel(role) {
+  if (role === 'super_admin') return 'Super Admin';
+  if (role === 'branch_manager') return 'Branch Manager';
+  if (role === 'agent') return 'Agent';
+  return role || 'Agent';
+}
+
+function labelRoleToDb(role) {
+  if (role === 'Super Admin' || role === 'super_admin') return 'super_admin';
+  if (role === 'Branch Manager' || role === 'branch_manager') return 'branch_manager';
+  if (role === 'Agent' || role === 'agent') return 'agent';
+  return '';
+}
+
+function normalizeRole(role) {
+  return dbRoleToLabel(role);
+}
+
+function isCurrentUserSuperAdmin() {
+  var profile = window.hilltopCurrentUser || {};
+  return profile.role === 'super_admin' || profile.role === 'Super Admin';
+}
+
+function requireSuperAdmin() {
+  if (isCurrentUserSuperAdmin()) return true;
+  showToast('Only Super Admin can manage staff and branches.', 'error');
+  return false;
+}
+
+function defaultJobTitleForRole(role, branchName) {
+  if (role === 'Super Admin') return 'System Administrator';
+  if (role === 'Branch Manager') return (branchName && branchName !== 'Unassigned' ? branchName + ' ' : '') + 'Branch Manager';
+  return 'Property Agent';
+}
+
+function cleanBranchName(name) {
+  if (!name) return 'Unassigned';
+  return name.replace(/\s+Branch$/i, '').trim();
+}
+
+function getBranchById(branchId) {
+  return branches.find(function(branch) {
+    return String(branch.id) === String(branchId);
+  });
+}
+
+function mapSupabaseStaff(record, branchLookup) {
+  var branch = record.branch_id ? branchLookup[String(record.branch_id)] : null;
+  var branchName = branch ? cleanBranchName(branch.name) : 'Unassigned';
+  var role = normalizeRole(record.role);
+
+  return {
+    id: record.id,
+    name: record.full_name,
+    email: record.email,
+    phone: record.phone || 'Not provided',
+    role: role,
+    branch: branchName,
+    branchId: record.branch_id || null,
+    authUserId: record.auth_user_id || null,
+    jobTitle: defaultJobTitleForRole(role, branchName),
+    status: record.is_active ? 'Active' : 'Inactive',
+    assignedProperties: 0,
+    assignedLeads: 0,
+    lastActivity: record.created_at || '',
+    notes: ''
+  };
+}
+
+function deriveBranchManager(branchId, mappedStaff) {
+  var manager = mappedStaff.find(function(staff) {
+    return staff.role === 'Branch Manager' && String(staff.branchId) === String(branchId);
+  });
+
+  return manager ? manager.name : 'Not assigned';
+}
+
+function mapSupabaseBranch(record, mappedStaff) {
+  var branchStaff = mappedStaff.filter(function(staff) {
+    return String(staff.branchId) === String(record.id);
+  });
+
+  return {
+    id: record.id,
+    name: record.name,
+    address: record.address || 'Address not provided',
+    phone: record.contact_number || 'Phone not provided',
+    email: 'Not configured',
+    manager: deriveBranchManager(record.id, mappedStaff),
+    staffCount: branchStaff.length,
+    activeProperties: 0,
+    openLeads: 0,
+    createdAt: record.created_at || ''
+  };
+}
+
+function findBranchIdForDisplayValue(value) {
+  if (!value || value === 'Both' || value === 'Unassigned') return null;
+
+  var matchById = branches.find(function(branch) {
+    return String(branch.id) === String(value);
+  });
+  if (matchById) return matchById.id;
+
+  var matchByName = branches.find(function(branch) {
+    return cleanBranchName(branch.name) === cleanBranchName(value);
+  });
+  return matchByName ? matchByName.id : null;
+}
+
+function populateBranchControls() {
+  var selectedStaffBranch = staffBranchFilter.value || currentBranchFilter;
+  var selectedFormBranch = document.getElementById('fBranch').value;
+
+  staffBranchFilter.innerHTML = '<option value="all">All Branches</option>';
+  branches.forEach(function(branch) {
+    var cleanName = cleanBranchName(branch.name);
+    var opt = document.createElement('option');
+    opt.value = cleanName;
+    opt.textContent = cleanName;
+    staffBranchFilter.appendChild(opt);
+  });
+  staffBranchFilter.value = selectedStaffBranch;
+  if (staffBranchFilter.value !== selectedStaffBranch) {
+    staffBranchFilter.value = 'all';
+    currentBranchFilter = 'all';
+  }
+
+  var staffBranchSelect = document.getElementById('fBranch');
+  staffBranchSelect.innerHTML = [
+    '<option value="">No branch / Super Admin</option>',
+    '<option value="Both">Both (legacy Super Admin)</option>'
+  ].join('');
+
+  branches.forEach(function(branch) {
+    var opt = document.createElement('option');
+    opt.value = branch.id;
+    opt.textContent = cleanBranchName(branch.name);
+    staffBranchSelect.appendChild(opt);
+  });
+
+  staffBranchSelect.value = selectedFormBranch;
+  if (selectedFormBranch && staffBranchSelect.value !== selectedFormBranch) {
+    var branchId = findBranchIdForDisplayValue(selectedFormBranch);
+    staffBranchSelect.value = branchId || '';
+  }
+}
+
+function applyManagementPermissions() {
+  var canManage = isCurrentUserSuperAdmin();
+  var manageButtons = document.querySelectorAll('.staff-manage-action');
+
+  [btnAddStaff, emptyAddStaffBtn, btnAddBranch].forEach(function(button) {
+    if (!button) return;
+    button.classList.toggle('manage-disabled', !canManage);
+    button.setAttribute('aria-disabled', canManage ? 'false' : 'true');
+    button.title = canManage ? '' : 'Only Super Admin can manage staff and branches.';
+  });
+
+  manageButtons.forEach(function(button) {
+    button.classList.toggle('manage-disabled', !canManage);
+    button.setAttribute('aria-disabled', canManage ? 'false' : 'true');
+    button.title = canManage ? (button.title || '') : 'Only Super Admin can manage staff and branches.';
+  });
+}
+
+function getSupabaseClient() {
+  return window.hilltopSupabase || null;
+}
+
+function waitForCurrentStaffProfile() {
+  return new Promise(function(resolve) {
+    var attempts = 0;
+    var maxAttempts = 200;
+
+    function checkProfile() {
+      if (window.hilltopCurrentUser && window.hilltopCurrentUser.id) {
+        resolve(window.hilltopCurrentUser);
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts >= maxAttempts) {
+        resolve(null);
+        return;
+      }
+
+      window.setTimeout(checkProfile, 50);
+    }
+
+    checkProfile();
+  });
+}
+
+function showStaffLoadingState() {
+  if (branchCardsGrid) {
+    branchCardsGrid.innerHTML = '<p style="color:var(--text-light);font-size:13px;">Loading staff and branches...</p>';
+  }
+
+  if (staffTableBody) {
+    staffTableBody.innerHTML = '<tr><td colspan="9" style="padding:18px;color:var(--text-light);">Loading staff and branches...</td></tr>';
+  }
+}
+
+async function loadBranchesFromSupabase() {
+  var supabaseClient = getSupabaseClient();
+  if (!supabaseClient) return null;
+
+  var response = await supabaseClient
+    .from('branches')
+    .select('id, name, address, contact_number, created_at')
+    .order('name', { ascending: true });
+
+  if (response.error) {
+    throw new Error('Unable to load branches from Supabase: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadStaffFromSupabase() {
+  var supabaseClient = getSupabaseClient();
+  if (!supabaseClient) return null;
+
+  var response = await supabaseClient
+    .from('staff_users')
+    .select('id, full_name, email, phone, role, branch_id, is_active, auth_user_id, created_at')
+    .order('full_name', { ascending: true });
+
+  if (response.error) {
+    throw new Error('Unable to load staff users from Supabase: ' + response.error.message);
+  }
+
+  return response.data || [];
+}
+
+async function loadStaffModuleData() {
+  var supabaseClient = getSupabaseClient();
+
+  if (!supabaseClient) {
+    showToast('Supabase is not available. Showing development sample staff data.', 'error');
+    renderAll();
+    return;
+  }
+
+  showStaffLoadingState();
+
+  try {
+    var currentStaffProfile = await waitForCurrentStaffProfile();
+
+    if (!currentStaffProfile) {
+      showToast('Staff profile is still being verified. Please refresh after login completes.', 'error');
+      renderAll();
+      return;
+    }
+
+    var branchRows = await loadBranchesFromSupabase();
+    var staffRows = await loadStaffFromSupabase();
+    var branchLookup = {};
+
+    branchRows.forEach(function(branch) {
+      branchLookup[String(branch.id)] = branch;
+    });
+
+    var mappedStaff = staffRows.map(function(record) {
+      return mapSupabaseStaff(record, branchLookup);
+    });
+
+    staffList = mappedStaff;
+    branches = branchRows.map(function(record) {
+      return mapSupabaseBranch(record, mappedStaff);
+    });
+
+    isUsingSupabaseData = true;
+
+    if (branches.length === 0) {
+      showToast('No branches found in Supabase.', 'error');
+    } else {
+      showToast('Staff and branches loaded from Supabase.', 'success');
+    }
+
+    renderAll();
+  } catch (error) {
+    console.warn('Staff module Supabase loading failed.', error);
+    showToast(error.message || 'Unable to load staff and branches from Supabase. Showing development sample data.', 'error');
+    renderAll();
+  }
+}
+
+function getStaffPayloadFromForm() {
+  var fullName = document.getElementById('fStaffName').value.trim();
+  var email = document.getElementById('fStaffEmail').value.trim();
+  var phone = document.getElementById('fStaffPhone').value.trim();
+  var roleLabel = document.getElementById('fRole').value;
+  var role = labelRoleToDb(roleLabel);
+  var branchValue = document.getElementById('fBranch').value;
+  var status = document.getElementById('fStatus').value;
+  var branchId = findBranchIdForDisplayValue(branchValue);
+
+  if (!fullName) throw new Error('Full name is required.');
+  if (!email) throw new Error('Email address is required.');
+  if (!role) throw new Error('Role is required.');
+  if ((role === 'branch_manager' || role === 'agent') && !branchId) {
+    throw new Error('Branch is required for Branch Manager and Agent roles.');
+  }
+
+  return {
+    full_name: fullName,
+    email: email,
+    phone: phone || null,
+    role: role,
+    branch_id: role === 'super_admin' ? (branchId || null) : branchId,
+    is_active: status === 'Active'
+  };
+}
+
+function getBranchPayloadFromForm() {
+  var name = document.getElementById('fBranchName').value.trim();
+  var address = document.getElementById('fBranchAddress').value.trim();
+  var contactNumber = document.getElementById('fBranchContact').value.trim();
+
+  if (!name) throw new Error('Branch name is required.');
+
+  return {
+    name: name,
+    address: address || null,
+    contact_number: contactNumber || null
+  };
+}
+
+async function createStaffProfile(payload) {
+  var response = await getSupabaseClient()
+    .from('staff_users')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (response.error) {
+    console.warn('Supabase staff insert failed.', response.error);
+    throw new Error(response.error.message || 'Unable to create staff profile.');
+  }
+}
+
+async function updateStaffProfile(staffId, payload) {
+  var response = await getSupabaseClient()
+    .from('staff_users')
+    .update(payload)
+    .eq('id', staffId)
+    .select('id')
+    .single();
+
+  if (response.error) {
+    console.warn('Supabase staff update failed.', response.error);
+    throw new Error(response.error.message || 'Unable to update staff profile.');
+  }
+}
+
+async function updateStaffActiveStatus(staffId, isActive) {
+  var response = await getSupabaseClient()
+    .from('staff_users')
+    .update({ is_active: isActive })
+    .eq('id', staffId)
+    .select('id')
+    .single();
+
+  if (response.error) {
+    console.warn('Supabase staff status update failed.', response.error);
+    throw new Error(response.error.message || 'Unable to update staff status.');
+  }
+}
+
+async function createBranch(payload) {
+  var response = await getSupabaseClient()
+    .from('branches')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (response.error) {
+    console.warn('Supabase branch insert failed.', response.error);
+    throw new Error(response.error.message || 'Unable to create branch.');
+  }
+}
+
+async function updateBranch(branchId, payload) {
+  var response = await getSupabaseClient()
+    .from('branches')
+    .update(payload)
+    .eq('id', branchId)
+    .select('id')
+    .single();
+
+  if (response.error) {
+    console.warn('Supabase branch update failed.', response.error);
+    throw new Error(response.error.message || 'Unable to update branch.');
+  }
+}
+
 
 /* ══════════════════════════════════════════════════════════════
    6. FILTER STAFF
-   // Later: replace with Supabase query filters.
+   Phase 2A: filters run against the mapped read-only Supabase data.
 ══════════════════════════════════════════════════════════════ */
 
 function getFilteredStaff() {
@@ -305,7 +710,8 @@ function renderBranches() {
   }
 
   if (filtered.length === 0) {
-    branchCardsGrid.innerHTML = '<p style="color:var(--text-light);font-size:13px;">No branch cards for this filter.</p>';
+    var message = branches.length === 0 ? 'No branches found in Supabase.' : 'No branch cards for this filter.';
+    branchCardsGrid.innerHTML = '<p style="color:var(--text-light);font-size:13px;">' + message + '</p>';
     return;
   }
 
@@ -353,7 +759,7 @@ function renderBranches() {
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
               'View',
             '</button>',
-            '<button class="action-btn outline small btn-edit-branch" data-branchid="' + branch.id + '">',
+            '<button class="action-btn outline small btn-edit-branch staff-manage-action" data-branchid="' + branch.id + '">',
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
               'Edit',
             '</button>',
@@ -422,13 +828,13 @@ function renderStaffTable(filtered) {
           '<button class="btn-view" data-id="' + staff.id + '" title="View details">',
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
           '</button>',
-          '<button class="btn-edit" data-id="' + staff.id + '" title="Edit">',
+          '<button class="btn-edit staff-manage-action" data-id="' + staff.id + '" title="Edit">',
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
           '</button>',
-          '<button class="btn-deactivate" data-id="' + staff.id + '" title="' + (isActive ? 'Deactivate' : 'Activate') + '">',
+          '<button class="btn-deactivate staff-manage-action" data-id="' + staff.id + '" title="' + (isActive ? 'Deactivate' : 'Activate') + '">',
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>',
           '</button>',
-          '<button class="btn-delete" data-id="' + staff.id + '" title="Delete">',
+          '<button class="btn-delete staff-manage-action" data-id="' + staff.id + '" title="Delete">',
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>',
           '</button>',
         '</div>',
@@ -472,11 +878,13 @@ function populateAssignmentSelects() {
 ══════════════════════════════════════════════════════════════ */
 
 function renderAll() {
+  populateBranchControls();
   var filtered = getFilteredStaff();
   updateStats(filtered);
   renderBranches();
   renderStaffTable(filtered);
   populateAssignmentSelects();
+  applyManagementPermissions();
 }
 
 
@@ -530,19 +938,22 @@ staffTableBody.addEventListener('click', function(e) {
   var deleteBtn      = e.target.closest('.btn-delete');
 
   if (viewBtn) {
-    openStaffDetailsPanel(parseInt(viewBtn.dataset.id));
+    openStaffDetailsPanel(viewBtn.dataset.id);
     return;
   }
   if (editBtn) {
-    openStaffModal('edit', parseInt(editBtn.dataset.id));
+    if (!requireSuperAdmin()) return;
+    openStaffModal('edit', editBtn.dataset.id);
     return;
   }
   if (deactivateBtn) {
-    toggleStaffStatus(parseInt(deactivateBtn.dataset.id));
+    if (!requireSuperAdmin()) return;
+    toggleStaffStatus(deactivateBtn.dataset.id);
     return;
   }
   if (deleteBtn) {
-    deleteStaff(parseInt(deleteBtn.dataset.id));
+    if (!requireSuperAdmin()) return;
+    deleteStaff(deleteBtn.dataset.id);
     return;
   }
 });
@@ -553,11 +964,12 @@ branchCardsGrid.addEventListener('click', function(e) {
   var editBtn = e.target.closest('.btn-edit-branch');
 
   if (viewBtn) {
-    openBranchDetailsModal(parseInt(viewBtn.dataset.branchid));
+    openBranchDetailsModal(viewBtn.dataset.branchid);
     return;
   }
   if (editBtn) {
-    showToast('Branch editing will be available in a future release.', 'success');
+    if (!requireSuperAdmin()) return;
+    openBranchFormModal('edit', editBtn.dataset.branchid);
     return;
   }
 });
@@ -568,13 +980,18 @@ branchCardsGrid.addEventListener('click', function(e) {
 ══════════════════════════════════════════════════════════════ */
 
 function openStaffDetailsPanel(id) {
-  var staff = staffList.find(function(s) { return s.id === id; });
+  var staff = staffList.find(function(s) { return String(s.id) === String(id); });
   if (!staff) return;
 
   activePanelStaffId = id;
 
   staffDetailsPanelTitle.textContent = staff.name;
-  btnEditFromPanel.onclick = function() { openStaffModal('edit', id); };
+  btnEditFromPanel.classList.toggle('manage-disabled', !isCurrentUserSuperAdmin());
+  btnEditFromPanel.setAttribute('aria-disabled', isCurrentUserSuperAdmin() ? 'false' : 'true');
+  btnEditFromPanel.onclick = function() {
+    if (!requireSuperAdmin()) return;
+    openStaffModal('edit', id);
+  };
 
   var initials     = getInitials(staff.name);
   var roleClass    = getRoleBadgeClass(staff.role);
@@ -627,10 +1044,10 @@ function openStaffDetailsPanel(id) {
     '<div>',
       '<div class="details-section-title">Quick Actions</div>',
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">',
-        '<button class="action-btn outline small" id="panelToggleStatus" data-id="' + staff.id + '">',
+        '<button class="action-btn outline small staff-manage-action" id="panelToggleStatus" data-id="' + staff.id + '">',
           isActive ? 'Deactivate Account' : 'Reactivate Account',
         '</button>',
-        '<button class="action-btn outline small" id="panelDeleteStaff" data-id="' + staff.id + '" style="color:#C0392B;border-color:#C0392B;">',
+        '<button class="action-btn outline small staff-manage-action" id="panelDeleteStaff" data-id="' + staff.id + '" style="color:#C0392B;border-color:#C0392B;">',
           'Delete Staff Record',
         '</button>',
       '</div>',
@@ -639,11 +1056,12 @@ function openStaffDetailsPanel(id) {
 
   // Bind quick action buttons inside panel
   document.getElementById('panelToggleStatus').addEventListener('click', function() {
-    toggleStaffStatus(parseInt(this.dataset.id));
-    if (activePanelStaffId === parseInt(this.dataset.id)) openStaffDetailsPanel(parseInt(this.dataset.id));
+    if (!requireSuperAdmin()) return;
+    toggleStaffStatus(this.dataset.id);
   });
   document.getElementById('panelDeleteStaff').addEventListener('click', function() {
-    var confirmId = parseInt(this.dataset.id);
+    if (!requireSuperAdmin()) return;
+    var confirmId = this.dataset.id;
     deleteStaff(confirmId);
   });
 
@@ -661,7 +1079,7 @@ function openStaffDetailsPanel(id) {
 function closeStaffDetailsPanel() {
   staffDetailsPanel.classList.remove('open');
   activePanelStaffId = null;
-  if (!staffModal.classList.contains('open') && !branchDetailsModal.classList.contains('open')) {
+  if (!staffModal.classList.contains('open') && !branchDetailsModal.classList.contains('open') && !branchFormModal.classList.contains('open')) {
     modalOverlay.classList.remove('active');
     document.body.style.overflow = '';
   }
@@ -676,7 +1094,7 @@ staffDetailsClose.addEventListener('click', closeStaffDetailsPanel);
 ══════════════════════════════════════════════════════════════ */
 
 function openBranchDetailsModal(branchId) {
-  var branch = branches.find(function(b) { return b.id === branchId; });
+  var branch = branches.find(function(b) { return String(b.id) === String(branchId); });
   if (!branch) return;
 
   branchModalTitle.textContent    = branch.name;
@@ -684,7 +1102,7 @@ function openBranchDetailsModal(branchId) {
 
   // Find staff in this branch
   var branchStaff = staffList.filter(function(s) {
-    return s.branch === branch.name.replace(' Branch', '') || s.branch === 'Both';
+    return String(s.branchId) === String(branch.id) || s.branch === cleanBranchName(branch.name) || s.branch === 'Both';
   });
 
   var staffListHtml = branchStaff.length === 0
@@ -728,7 +1146,7 @@ function openBranchDetailsModal(branchId) {
 
 function closeBranchDetailsModal() {
   branchDetailsModal.classList.remove('open');
-  if (!staffModal.classList.contains('open') && !staffDetailsPanel.classList.contains('open')) {
+  if (!staffModal.classList.contains('open') && !staffDetailsPanel.classList.contains('open') && !branchFormModal.classList.contains('open')) {
     modalOverlay.classList.remove('active');
     document.body.style.overflow = '';
   }
@@ -736,6 +1154,48 @@ function closeBranchDetailsModal() {
 }
 
 branchModalClose.addEventListener('click', closeBranchDetailsModal);
+
+function openBranchFormModal(mode, branchId) {
+  if (!requireSuperAdmin()) return;
+
+  mode = mode || 'add';
+  branchForm.reset();
+  editBranchIdField.value = '';
+
+  if (mode === 'edit' && branchId) {
+    var branch = branches.find(function(b) { return String(b.id) === String(branchId); });
+    if (!branch) return;
+
+    branchFormModalTitle.textContent = 'Edit Branch';
+    editBranchIdField.value = branch.id;
+    document.getElementById('fBranchName').value = branch.name;
+    document.getElementById('fBranchAddress').value = branch.address === 'Address not provided' ? '' : branch.address;
+    document.getElementById('fBranchContact').value = branch.phone === 'Phone not provided' ? '' : branch.phone;
+  } else {
+    branchFormModalTitle.textContent = 'Add New Branch';
+  }
+
+  branchFormModal.style.display = 'flex';
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      branchFormModal.classList.add('open');
+    });
+  });
+  modalOverlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBranchFormModal() {
+  branchFormModal.classList.remove('open');
+  if (!staffModal.classList.contains('open') && !staffDetailsPanel.classList.contains('open') && !branchDetailsModal.classList.contains('open')) {
+    modalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  setTimeout(function() { branchFormModal.style.display = 'none'; }, 300);
+}
+
+branchFormModalClose.addEventListener('click', closeBranchFormModal);
+branchFormCancelBtn.addEventListener('click', closeBranchFormModal);
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -747,7 +1207,7 @@ function openStaffModal(mode, id) {
   switchStaffModalTab('staffdetails');
 
   if (mode === 'edit' && id) {
-    var staff = staffList.find(function(s) { return s.id === id; });
+    var staff = staffList.find(function(s) { return String(s.id) === String(id); });
     if (!staff) return;
 
     staffModalTitle.textContent = 'Edit Staff Member';
@@ -758,7 +1218,7 @@ function openStaffModal(mode, id) {
     document.getElementById('fStaffPhone').value = staff.phone;
     document.getElementById('fJobTitle').value   = staff.jobTitle;
     document.getElementById('fRole').value       = staff.role;
-    document.getElementById('fBranch').value     = staff.branch;
+    document.getElementById('fBranch').value     = staff.branchId || findBranchIdForDisplayValue(staff.branch) || (staff.branch === 'Both' ? 'Both' : '');
     document.getElementById('fStatus').value     = staff.status;
     document.getElementById('fStaffNotes').value = staff.notes;
 
@@ -781,16 +1241,22 @@ function openStaffModal(mode, id) {
 
 function closeStaffModal() {
   staffModal.classList.remove('open');
-  if (!staffDetailsPanel.classList.contains('open') && !branchDetailsModal.classList.contains('open')) {
+  if (!staffDetailsPanel.classList.contains('open') && !branchDetailsModal.classList.contains('open') && !branchFormModal.classList.contains('open')) {
     modalOverlay.classList.remove('active');
     document.body.style.overflow = '';
   }
   setTimeout(function() { staffModal.style.display = 'none'; }, 300);
 }
 
-btnAddStaff.addEventListener('click', function() { openStaffModal('add'); });
+btnAddStaff.addEventListener('click', function() {
+  if (!requireSuperAdmin()) return;
+  openStaffModal('add');
+});
 if (emptyAddStaffBtn) {
-  emptyAddStaffBtn.addEventListener('click', function() { openStaffModal('add'); });
+  emptyAddStaffBtn.addEventListener('click', function() {
+    if (!requireSuperAdmin()) return;
+    openStaffModal('add');
+  });
 }
 staffModalClose.addEventListener('click', closeStaffModal);
 staffModalCancelBtn.addEventListener('click', closeStaffModal);
@@ -815,6 +1281,8 @@ function switchStaffModalTab(tabName) {
 modalOverlay.addEventListener('click', function() {
   if (staffModal.classList.contains('open')) {
     closeStaffModal();
+  } else if (branchFormModal.classList.contains('open')) {
+    closeBranchFormModal();
   } else if (branchDetailsModal.classList.contains('open')) {
     closeBranchDetailsModal();
   } else if (staffDetailsPanel.classList.contains('open')) {
@@ -828,14 +1296,16 @@ modalOverlay.addEventListener('click', function() {
 
 /* ══════════════════════════════════════════════════════════════
    18. FORM SAVE (ADD OR EDIT)
-   // Later: replace array push/update with Supabase upsert:
-   // await supabase.from('staff_users').upsert(formData);
+   Phase 2A: frontend array only, even when initial data came from Supabase.
+   Phase 2B will add create/update/deactivate actions safely.
 ══════════════════════════════════════════════════════════════ */
 
-staffForm.addEventListener('submit', function(e) {
+staffForm.addEventListener('submit', async function(e) {
   e.preventDefault();
 
-  var required = ['fStaffName', 'fStaffEmail', 'fStaffPhone', 'fRole', 'fBranch', 'fStatus'];
+  if (!requireSuperAdmin()) return;
+
+  var required = ['fStaffName', 'fStaffEmail', 'fRole', 'fStatus'];
   var valid = true;
 
   required.forEach(function(fieldId) {
@@ -854,102 +1324,145 @@ staffForm.addEventListener('submit', function(e) {
     return;
   }
 
-  var formData = {
-    name:               document.getElementById('fStaffName').value.trim(),
-    email:              document.getElementById('fStaffEmail').value.trim(),
-    phone:              document.getElementById('fStaffPhone').value.trim(),
-    jobTitle:           document.getElementById('fJobTitle').value.trim(),
-    role:               document.getElementById('fRole').value,
-    branch:             document.getElementById('fBranch').value,
-    status:             document.getElementById('fStatus').value,
-    notes:              document.getElementById('fStaffNotes').value.trim(),
-    lastActivity:       new Date().toISOString().slice(0, 10),
-    assignedProperties: 0,
-    assignedLeads:      0
-  };
-
   var editId = editStaffIdField.value;
 
-  if (editId) {
-    // EDIT existing staff
-    var idx = staffList.findIndex(function(s) { return s.id === parseInt(editId); });
-    if (idx > -1) {
-      formData.id                 = parseInt(editId);
-      formData.assignedProperties = staffList[idx].assignedProperties;
-      formData.assignedLeads      = staffList[idx].assignedLeads;
-      staffList[idx]              = formData;
-      showToast('Staff member updated', 'success');
+  try {
+    if (!getSupabaseClient()) {
+      showToast('Supabase is not available. Staff changes cannot be saved.', 'error');
+      return;
     }
-  } else {
-    // ADD new staff
-    formData.id = nextStaffId++;
-    staffList.push(formData);
-    showToast('Staff member added', 'success');
+
+    var payload = getStaffPayloadFromForm();
+
+    if (editId) {
+      await updateStaffProfile(editId, payload);
+      showToast('Staff profile updated.', 'success');
+    } else {
+      await createStaffProfile(payload);
+      showToast('Staff profile created. Create the login account in Supabase Auth and link auth_user_id when ready.', 'success');
+    }
+
+    closeStaffModal();
+
+    if (editId && String(activePanelStaffId) === String(editId)) {
+      closeStaffDetailsPanel();
+    }
+
+    await loadStaffModuleData();
+  } catch (error) {
+    console.warn('Staff profile save failed.', error);
+    showToast(error.message || 'Unable to save staff profile.', 'error');
   }
-
-  closeStaffModal();
-
-  // If panel was open for edited staff, refresh it
-  if (editId && activePanelStaffId === parseInt(editId)) {
-    openStaffDetailsPanel(parseInt(editId));
-  }
-
-  renderAll();
 });
 
 
 /* ══════════════════════════════════════════════════════════════
    19. TOGGLE STAFF STATUS (Activate / Deactivate)
-   // Later: replace with Supabase update:
-   // await supabase.from('staff_users').update({ status }).eq('id', id);
+   Phase 2A: frontend array only. No Supabase update is sent.
 ══════════════════════════════════════════════════════════════ */
 
-function toggleStaffStatus(id) {
-  var staff = staffList.find(function(s) { return s.id === id; });
+async function toggleStaffStatus(id) {
+  if (!requireSuperAdmin()) return;
+
+  var staff = staffList.find(function(s) { return String(s.id) === String(id); });
   if (!staff) return;
 
   var newStatus  = staff.status === 'Active' ? 'Inactive' : 'Active';
   var actionWord = newStatus === 'Inactive' ? 'deactivate' : 'reactivate';
 
+  if (String(id) === String((window.hilltopCurrentUser || {}).id) && newStatus === 'Inactive') {
+    showToast('You cannot deactivate your own active session.', 'error');
+    return;
+  }
+
   if (!confirm('Are you sure you want to ' + actionWord + ' ' + staff.name + '?')) return;
 
-  staff.status = newStatus;
-  showToast(staff.name + ' ' + (newStatus === 'Active' ? 'reactivated' : 'deactivated'), 'success');
-  renderAll();
+  try {
+    await updateStaffActiveStatus(id, newStatus === 'Active');
+    showToast(newStatus === 'Active' ? 'Staff account activated.' : 'Staff account deactivated.', 'success');
+    await loadStaffModuleData();
+  } catch (error) {
+    console.warn('Staff status change failed.', error);
+    showToast(error.message || 'Unable to update staff status.', 'error');
+  }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
    20. DELETE STAFF
-   // Later: replace with Supabase delete:
-   // await supabase.from('staff_users').delete().eq('id', id);
+   Phase 2A: frontend array only. No Supabase delete is sent.
 ══════════════════════════════════════════════════════════════ */
 
-function deleteStaff(id) {
-  var staff = staffList.find(function(s) { return s.id === id; });
-  if (!staff) return;
-  if (!confirm('Delete "' + staff.name + '" permanently? This cannot be undone.')) return;
+async function deleteStaff(id) {
+  if (!requireSuperAdmin()) return;
 
-  staffList = staffList.filter(function(s) { return s.id !== id; });
-  if (activePanelStaffId === id) closeStaffDetailsPanel();
-  showToast('Staff record deleted', 'success');
-  renderAll();
+  var staff = staffList.find(function(s) { return String(s.id) === String(id); });
+  if (!staff) return;
+
+  if (String(id) === String((window.hilltopCurrentUser || {}).id)) {
+    showToast('You cannot deactivate your own active session.', 'error');
+    return;
+  }
+
+  if (!confirm('Deactivate "' + staff.name + '" instead of deleting? Staff records are kept for audit safety.')) return;
+
+  try {
+    await updateStaffActiveStatus(id, false);
+    if (String(activePanelStaffId) === String(id)) closeStaffDetailsPanel();
+    showToast('Staff profile deactivated instead of deleted for audit safety.', 'success');
+    await loadStaffModuleData();
+  } catch (error) {
+    console.warn('Staff soft-delete failed.', error);
+    showToast(error.message || 'Unable to deactivate staff profile.', 'error');
+  }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   21. ADD NEW BRANCH (frontend-only alert)
+   21. ADD / EDIT BRANCH
+   Branch deletion is intentionally not implemented for audit safety.
 ══════════════════════════════════════════════════════════════ */
 
 btnAddBranch.addEventListener('click', function() {
-  showToast('New branch creation is frontend-only for now. Supabase integration coming soon.', 'success');
+  if (!requireSuperAdmin()) return;
+  openBranchFormModal('add');
+});
+
+branchForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  if (!requireSuperAdmin()) return;
+
+  var editId = editBranchIdField.value;
+
+  try {
+    if (!getSupabaseClient()) {
+      showToast('Supabase is not available. Branch changes cannot be saved.', 'error');
+      return;
+    }
+
+    var payload = getBranchPayloadFromForm();
+
+    if (editId) {
+      await updateBranch(editId, payload);
+      showToast('Branch updated.', 'success');
+    } else {
+      await createBranch(payload);
+      showToast('Branch created.', 'success');
+    }
+
+    closeBranchFormModal();
+    await loadStaffModuleData();
+  } catch (error) {
+    console.warn('Branch save failed.', error);
+    showToast(error.message || 'Unable to save branch.', 'error');
+  }
 });
 
 
 /* ══════════════════════════════════════════════════════════════
    22. LEAD ASSIGNMENT PREVIEW
-   // Later: replace with Supabase update on leads table:
-   // await supabase.from('leads').update({ agent_id }).eq('id', leadId);
+   Phase 3 or later: keep this frontend-only until Leads backend work.
 ══════════════════════════════════════════════════════════════ */
 
 btnAssign.addEventListener('click', function() {
@@ -961,8 +1474,8 @@ btnAssign.addEventListener('click', function() {
     return;
   }
 
-  var lead  = sampleLeads.find(function(l) { return l.id === parseInt(leadId); });
-  var agent = staffList.find(function(s) { return s.id === parseInt(agentId); });
+  var lead  = sampleLeads.find(function(l) { return String(l.id) === String(leadId); });
+  var agent = staffList.find(function(s) { return String(s.id) === String(agentId); });
 
   if (lead && agent) {
     showToast('Lead assignment updated in demo data.', 'success');
@@ -987,7 +1500,8 @@ if (hamburgerBtn && sidebar && sidebarOverlay) {
     sidebarOverlay.classList.remove('active');
     if (!staffModal.classList.contains('open') &&
         !staffDetailsPanel.classList.contains('open') &&
-        !branchDetailsModal.classList.contains('open')) {
+        !branchDetailsModal.classList.contains('open') &&
+        !branchFormModal.classList.contains('open')) {
       document.body.style.overflow = '';
     }
   }
@@ -1025,4 +1539,4 @@ function showToast(message, type) {
    25. INITIAL RENDER
 ══════════════════════════════════════════════════════════════ */
 
-renderAll();
+loadStaffModuleData();
