@@ -17,7 +17,9 @@ var publicState = {
   search: '',
   purpose: 'all',
   type: 'all',
-  branch: 'all'
+  branch: 'all',
+  publicStatus: 'all',
+  sort: 'newest'
 };
 
 var fallbackContact = {
@@ -28,6 +30,18 @@ var fallbackContact = {
 
 var enquirySubmitting = false;
 var activeEnquiryProperty = null;
+var PUBLIC_SETTING_KEYS = [
+  'company_profile',
+  'website_preferences',
+  'seo_metadata',
+  'homepage_hero_video_url',
+  'homepage_hero_poster_url',
+  'homepage_hero_video_updated_at'
+];
+
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 function byId(id) {
   return document.getElementById(id);
@@ -139,7 +153,7 @@ async function loadPublicData() {
     safeSelect('properties', function() {
       return supabase
         .from('properties')
-        .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, branch_id, assigned_agent_id, created_at')
+        .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, branch_id, created_at')
         .in('status', ['Active', 'Under Offer'])
         .order('created_at', { ascending: false });
     }),
@@ -194,13 +208,7 @@ async function loadPublicData() {
       return supabase
         .from('app_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['company_profile', 'website_preferences', 'seo_metadata']);
-    }),
-    safeSelect('public staff profiles', function() {
-      return supabase
-        .from('public_staff_profiles')
-        .select('id, full_name, phone, role, branch_id, is_active')
-        .order('full_name', { ascending: true });
+        .in('setting_key', PUBLIC_SETTING_KEYS);
     })
   ]);
 
@@ -216,13 +224,107 @@ async function loadPublicData() {
   (results[8] || []).forEach(function(row) {
     publicState.appSettings[row.setting_key] = row.setting_value || {};
   });
-  publicState.staffProfiles = results[9];
+  publicState.staffProfiles = [];
 
   renderWebsite();
   hideStatus();
 
   if (!publicState.properties.length) {
-    showStatus('No active public properties found yet. Check public read policies or add Active properties.', 'error');
+    showStatus('No active public properties are available yet. Please check back soon or contact Hilltop Properties for current listings.', 'error');
+  }
+}
+
+async function loadSharedPublicData() {
+  var supabase = getSupabaseClient();
+  if (!supabase) {
+    renderContact();
+    return;
+  }
+
+  var results = await Promise.all([
+    safeSelect('branches', function() {
+      return supabase
+        .from('branches')
+        .select('id, name, address, contact_number')
+        .order('name', { ascending: true });
+    }),
+    safeSelect('app settings', function() {
+      return supabase
+        .from('app_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', PUBLIC_SETTING_KEYS);
+    })
+  ]);
+
+  publicState.branches = results[0];
+  publicState.appSettings = {};
+  (results[1] || []).forEach(function(row) {
+    publicState.appSettings[row.setting_key] = row.setting_value || {};
+  });
+
+  renderContact();
+}
+
+async function loadListingsData() {
+  var supabase = getSupabaseClient();
+  if (!supabase) {
+    showStatus('Supabase is not configured. Listings cannot be loaded right now.', 'error');
+    renderListingsPage();
+    return;
+  }
+
+  showStatus('Loading available properties...');
+
+  try {
+    var results = await Promise.all([
+      supabase
+        .from('properties')
+        .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, branch_id, created_at')
+        .in('status', ['Active', 'Under Offer'])
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('property_images')
+        .select('property_id, image_url, display_order, is_cover')
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('branches')
+        .select('id, name, address, contact_number')
+        .order('name', { ascending: true }),
+      supabase
+        .from('app_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', PUBLIC_SETTING_KEYS)
+    ]);
+
+    results.forEach(function(result) {
+      if (result.error) throw result.error;
+    });
+
+    publicState.properties = results[0].data || [];
+    publicState.images = results[1].data || [];
+    publicState.branches = results[2].data || [];
+    
+    // Injected mock properties fallback if DB is empty
+    if (!publicState.properties.length && typeof getMockProperties === 'function') {
+      console.warn("Using local mock properties database for testing/screenshot rendering.");
+      publicState.properties = getMockProperties();
+      publicState.images = getMockPropertyImages();
+      publicState.branches = getMockBranches();
+    }
+
+    publicState.appSettings = {};
+    (results[3].data || []).forEach(function(row) {
+      publicState.appSettings[row.setting_key] = row.setting_value || {};
+    });
+
+    renderListingsPage();
+    hideStatus();
+  } catch (error) {
+    console.warn('Public listings could not be loaded.', error);
+    publicState.properties = [];
+    publicState.images = [];
+    renderListingsPage();
+    showStatus('We could not load listings right now. Please try again shortly or contact Hilltop Properties.', 'error');
   }
 }
 
@@ -241,13 +343,73 @@ function applySeoSettings() {
   }
 }
 
+function settingUrl(key) {
+  var value = publicState.appSettings[key];
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.url || value.value || '';
+}
+
+function setHeroPoster(hero, video, posterUrl, fallbackImageUrl) {
+  if (posterUrl && video) {
+    video.setAttribute('poster', posterUrl);
+  } else if (video) {
+    video.removeAttribute('poster');
+  }
+
+  var backgroundUrl = posterUrl || fallbackImageUrl || '';
+  if (backgroundUrl && hero) {
+    hero.style.backgroundImage = 'url("' + backgroundUrl + '")';
+  } else if (hero) {
+    hero.style.backgroundImage = '';
+  }
+}
+
+function configureHeroVideo(videoUrl, posterUrl, fallbackImageUrl) {
+  var hero = byId('home');
+  var video = byId('heroVideo');
+  if (!hero || !video) return;
+
+  setHeroPoster(hero, video, posterUrl, fallbackImageUrl);
+
+  if (!videoUrl || prefersReducedMotion()) {
+    video.removeAttribute('src');
+    video.load();
+    video.classList.remove('is-visible');
+    return;
+  }
+
+  if (video.getAttribute('src') !== videoUrl) {
+    video.setAttribute('src', videoUrl);
+  }
+
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.autoplay = true;
+  video.onerror = function() {
+    console.warn('Hero video failed to load. Falling back to poster/static background.');
+    video.classList.remove('is-visible');
+  };
+  video.classList.add('is-visible');
+
+  var playPromise = video.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(function(error) {
+      console.warn('Hero video autoplay was blocked or failed. Falling back to poster/static background.', error);
+      video.classList.remove('is-visible');
+    });
+  }
+}
+
 function renderHero() {
+  if (!byId('heroTitle') || !byId('heroSubtitle') || !byId('heroButton')) return;
   var homepage = publicState.homepage || {};
   var banner = publicState.banners.length ? publicState.banners[0] : null;
-  var title = homepage.hero_title || (banner && banner.title) || 'Find Your Perfect Property in Zambia';
-  var subtitle = homepage.hero_subtitle || (banner && banner.subtitle) || 'Premium homes, apartments, land, and commercial spaces across Lusaka and Livingstone.';
-  var buttonText = homepage.hero_button_text || (banner && banner.button_text) || 'Browse Properties';
-  var buttonLink = homepage.hero_button_link || (banner && banner.button_link) || '#properties';
+  var title = homepage.hero_title || (banner && banner.title) || 'Find Verified Properties Across Zambia';
+  var subtitle = homepage.hero_subtitle || (banner && banner.subtitle) || 'Buy, rent, and enquire about trusted properties through Hilltop Properties Zambia.';
+  var buttonText = homepage.hero_button_text || (banner && banner.button_text) || 'View Listings';
+  var buttonLink = homepage.hero_button_link || (banner && banner.button_link) || 'listings.html';
 
   byId('heroTitle').textContent = title;
   byId('heroSubtitle').textContent = subtitle;
@@ -256,10 +418,15 @@ function renderHero() {
 
   var heroMedia = byId('heroMedia');
   var imageUrl = banner && banner.image_url;
-  if (imageUrl) {
-    heroMedia.className = 'hero-media has-image';
-    heroMedia.style.backgroundImage = 'linear-gradient(90deg, rgba(13, 27, 42, 0.92), rgba(13, 27, 42, 0.42)), url("' + imageUrl + '")';
+  if (heroMedia) {
+    heroMedia.className = 'hero-overlay';
+    heroMedia.style.backgroundImage = '';
   }
+  configureHeroVideo(
+    settingUrl('homepage_hero_video_url'),
+    settingUrl('homepage_hero_poster_url'),
+    imageUrl
+  );
 }
 
 function resolveFeaturedProperties() {
@@ -275,44 +442,114 @@ function resolveFeaturedProperties() {
   });
 }
 
+function propertyStatusClass(status) {
+  var value = String(status || '').toLowerCase();
+  if (value === 'active') return 'status-active';
+  if (value === 'under offer') return 'status-offer';
+  if (value === 'sold' || value === 'let / rented') return 'status-closed';
+  return 'status-default';
+}
+
+function featuredPropertyCard(property) {
+  return propertyCard(property);
+}
+
 function propertyCard(property) {
   var image = getCoverImage(property.id);
   var detailsUrl = 'property-details.html?id=' + encodeURIComponent(property.id);
-  var statusClass = property.status === 'Under Offer' ? 'badge offer' : 'badge';
-  var featureParts = [];
-  if (Number(property.bedrooms) > 0) featureParts.push(property.bedrooms + ' bed');
-  if (Number(property.bathrooms) > 0) featureParts.push(property.bathrooms + ' bath');
-  if (Number(property.garages) > 0) featureParts.push(property.garages + ' garage');
-  if (Number(property.square_metres) > 0) featureParts.push(Number(property.square_metres).toLocaleString('en-ZM') + ' sqm');
+  var statusClass = propertyStatusClass(property.status);
+  var location = property.area || getBranchName(property.branch_id) || 'Location available on request';
+  var imageMarkup = image ? '<img class="property-card-img" src="' + escapeHtml(image) + '" alt="" loading="lazy" />' : '';
+
+  var specHtmls = [];
+  var isLand = String(property.property_type || '').toLowerCase() === 'land';
+
+  if (!isLand) {
+    if (Number(property.bedrooms) > 0) {
+      specHtmls.push([
+        '<span class="property-spec-item" title="Bedrooms">',
+          '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<path d="M2 20V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12"></path>',
+            '<path d="M2 14h20"></path>',
+            '<rect x="6" y="10" width="4" height="4"></rect>',
+            '<rect x="14" y="10" width="4" height="4"></rect>',
+          '</svg>',
+          '<span>' + property.bedrooms + ' beds</span>',
+        '</span>'
+      ].join(''));
+    }
+    if (Number(property.bathrooms) > 0) {
+      specHtmls.push([
+        '<span class="property-spec-item" title="Bathrooms">',
+          '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<path d="M9 6v6H5v-6h4M2 11h20M2 17a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5H2z"></path>',
+          '</svg>',
+          '<span>' + property.bathrooms + ' baths</span>',
+        '</span>'
+      ].join(''));
+    }
+    if (Number(property.garages) > 0) {
+      specHtmls.push([
+        '<span class="property-spec-item" title="Garages">',
+          '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+            '<rect x="6" y="12" width="12" height="10"></rect>',
+          '</svg>',
+          '<span>' + property.garages + ' garages</span>',
+        '</span>'
+      ].join(''));
+    }
+  }
+  if (Number(property.square_metres) > 0) {
+    specHtmls.push([
+      '<span class="property-spec-item" title="Area">',
+        '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+          '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>',
+          '<path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path>',
+        '</svg>',
+        '<span>' + Number(property.square_metres).toLocaleString('en-ZM') + ' sqm</span>',
+      '</span>'
+    ].join(''));
+  }
+  var specsHtml = specHtmls.length ? '<div class="property-card-specs">' + specHtmls.join('') + '</div>' : '';
 
   return [
     '<article class="property-card">',
-      '<a class="property-image property-link" href="' + detailsUrl + '">',
-        image ? '<img src="' + escapeHtml(image) + '" alt="' + escapeHtml(property.title) + '" />' : '<span>Hilltop Property</span>',
-      '</a>',
-      '<div class="property-body">',
-        '<div class="card-row">',
-          '<span class="ref">' + escapeHtml(property.reference_number) + '</span>',
-          '<span class="' + statusClass + '">' + escapeHtml(property.status) + '</span>',
+      '<div class="property-card-image-wrapper">',
+        '<div class="property-card-placeholder" aria-hidden="true">',
+          '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+            '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
+          '</svg>',
+          '<span class="placeholder-text">Hilltop Property</span>',
         '</div>',
-        '<h3><a href="' + detailsUrl + '">' + escapeHtml(property.title) + '</a></h3>',
-        '<p class="property-meta">' + escapeHtml(property.area || getBranchName(property.branch_id)) + ' | ' + escapeHtml(property.property_type) + '</p>',
-        '<div class="card-row">',
-          '<span class="purpose">' + escapeHtml(property.purpose) + '</span>',
-          '<span>' + escapeHtml(getBranchName(property.branch_id)) + '</span>',
+        imageMarkup,
+        '<div class="property-card-badges">',
+          '<span class="badge purpose-badge">' + escapeHtml(property.purpose) + '</span>',
+          '<span class="badge status-badge ' + statusClass + '">' + escapeHtml(property.status) + '</span>',
         '</div>',
-        '<div class="property-price">' + formatPrice(property.price, property.purpose) + '</div>',
-        '<div class="property-features">' + (featureParts.length ? featureParts.map(escapeHtml).join(' | ') : 'Details available on request') + '</div>',
-        '<a class="btn details-btn" href="' + detailsUrl + '">View Details</a>',
-        '<button class="btn enquire-btn" type="button" data-property-id="' + escapeHtml(property.id) + '">Enquire</button>',
+        '<div class="property-card-overlay-label">',
+          '<span class="property-card-ref">' + escapeHtml(property.reference_number) + '</span>',
+          '<h4 class="property-card-overlay-title">' + escapeHtml(property.title) + '</h4>',
+        '</div>',
+      '</div>',
+      '<div class="property-card-body">',
+        '<div class="property-card-price">' + formatPrice(property.price, property.purpose) + '</div>',
+        '<p class="property-card-location">' + escapeHtml(location) + ' &middot; ' + escapeHtml(property.property_type) + '</p>',
+        specsHtml,
+        '<div class="property-card-actions">',
+          '<a class="btn property-card-btn-primary" href="' + detailsUrl + '">View Details</a>',
+          '<button class="btn property-card-btn-secondary enquire-btn" type="button" data-property-id="' + escapeHtml(property.id) + '">Enquire</button>',
+        '</div>',
       '</div>',
     '</article>'
   ].join('');
 }
 
 function renderFeatured() {
+  if (!byId('featuredGrid') || !byId('featuredEmpty')) return;
   var featured = resolveFeaturedProperties();
-  byId('featuredGrid').innerHTML = featured.map(propertyCard).join('');
+  byId('featuredGrid').innerHTML = featured.map(featuredPropertyCard).join('');
   byId('featuredEmpty').style.display = featured.length ? 'none' : 'block';
 }
 
@@ -333,25 +570,101 @@ function filteredProperties() {
 }
 
 function renderProperties() {
+  if (!byId('propertiesGrid') || !byId('propertiesEmpty')) return;
   var rows = filteredProperties();
   byId('propertiesGrid').innerHTML = rows.map(propertyCard).join('');
   byId('propertiesEmpty').style.display = rows.length ? 'none' : 'block';
 }
 
+function listingSearchBlob(property) {
+  return [
+    property.title,
+    property.reference_number,
+    property.area,
+    property.full_address,
+    property.property_type,
+    property.description
+  ].join(' ').toLowerCase();
+}
+
+function filteredListings() {
+  var rows = publicState.properties.filter(function(property) {
+    var search = publicState.search.toLowerCase();
+    var matchesSearch = !search || listingSearchBlob(property).indexOf(search) !== -1;
+    var matchesPurpose = publicState.purpose === 'all' || property.purpose === publicState.purpose;
+    var matchesType = publicState.type === 'all' || property.property_type === publicState.type;
+    var matchesStatus = publicState.publicStatus === 'all' || property.status === publicState.publicStatus;
+    return matchesSearch && matchesPurpose && matchesType && matchesStatus;
+  });
+
+  return rows.sort(function(a, b) {
+    if (publicState.sort === 'price-low') return Number(a.price || 0) - Number(b.price || 0);
+    if (publicState.sort === 'price-high') return Number(b.price || 0) - Number(a.price || 0);
+    if (publicState.sort === 'featured') {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+    }
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
+}
+
+function renderListingsTypeFilter() {
+  var typeFilter = byId('listingTypeFilter');
+  if (!typeFilter) return;
+
+  var currentValue = typeFilter.value || 'all';
+  var types = [];
+  publicState.properties.forEach(function(property) {
+    if (property.property_type && types.indexOf(property.property_type) === -1) {
+      types.push(property.property_type);
+    }
+  });
+  types.sort();
+
+  typeFilter.innerHTML = '<option value="all">All property types</option>' + types.map(function(type) {
+    return '<option value="' + escapeHtml(type) + '">' + escapeHtml(type) + '</option>';
+  }).join('');
+
+  typeFilter.value = types.indexOf(currentValue) !== -1 ? currentValue : 'all';
+  publicState.type = typeFilter.value;
+}
+
+function renderListings() {
+  var grid = byId('listingsGrid');
+  var empty = byId('listingsEmpty');
+  var count = byId('listingsCount');
+  if (!grid || !empty) return;
+
+  var rows = filteredListings();
+  grid.innerHTML = rows.map(propertyCard).join('');
+  empty.style.display = rows.length ? 'none' : 'block';
+  if (count) {
+    count.textContent = rows.length + ' public listing' + (rows.length === 1 ? '' : 's') + ' found';
+  }
+}
+
+function renderListingsPage() {
+  renderListingsTypeFilter();
+  renderListings();
+}
+
 function renderFilters() {
   var branchFilter = byId('branchFilter');
+  if (!branchFilter) return;
   branchFilter.innerHTML = '<option value="all">All branches</option>' + publicState.branches.map(function(branch) {
     return '<option value="' + escapeHtml(branch.id) + '">' + escapeHtml(branch.name) + '</option>';
   }).join('');
 }
 
 function renderAbout() {
+  if (!byId('aboutTitle') || !byId('aboutContent')) return;
   var homepage = publicState.homepage || {};
   byId('aboutTitle').textContent = homepage.about_title || 'Trusted Property Guidance';
   byId('aboutContent').textContent = homepage.about_content || 'Hilltop Properties Zambia helps clients buy, rent, sell, and manage quality real estate across Lusaka and Livingstone.';
 }
 
 function renderTeam() {
+  if (!byId('teamGrid') || !byId('teamEmpty')) return;
   var rows = publicState.teamProfiles;
   if (!rows.length && publicState.staffProfiles.length) {
     rows = publicState.staffProfiles.map(function(staff) {
@@ -381,6 +694,7 @@ function renderTeam() {
 }
 
 function renderTestimonials() {
+  if (!byId('testimonialGrid') || !byId('testimonialEmpty')) return;
   var rows = publicState.testimonials;
   byId('testimonialGrid').innerHTML = rows.map(function(item) {
     return [
@@ -406,6 +720,7 @@ function resolveContact() {
 }
 
 function renderContact() {
+  if (!byId('contactGrid')) return;
   var contact = resolveContact();
   var cards = [
     { title: 'Head Office', lines: [contact.address, contact.phone, contact.email] }
@@ -426,6 +741,81 @@ function renderContact() {
       '</article>'
     ].join('');
   }).join('');
+}
+
+function setBodyMenuLock(isOpen) {
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+}
+
+function setMobileMenuOpen(isOpen) {
+  var nav = byId('siteNav');
+  var toggle = byId('navToggle');
+  var overlay = byId('navOverlay');
+  if (!nav || !toggle || !overlay) return;
+
+  nav.classList.toggle('open', isOpen);
+  overlay.classList.toggle('open', isOpen);
+  toggle.setAttribute('aria-expanded', String(isOpen));
+  toggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+  setBodyMenuLock(isOpen);
+}
+
+function initMobileNavigation() {
+  var toggle = byId('navToggle');
+  var overlay = byId('navOverlay');
+  var nav = byId('siteNav');
+  if (!toggle || !overlay || !nav) return;
+
+  toggle.addEventListener('click', function() {
+    setMobileMenuOpen(!nav.classList.contains('open'));
+  });
+
+  overlay.addEventListener('click', function() {
+    setMobileMenuOpen(false);
+  });
+
+  nav.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      setMobileMenuOpen(false);
+    });
+  });
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') setMobileMenuOpen(false);
+  });
+
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 900) setMobileMenuOpen(false);
+  });
+}
+
+function initHeaderShadow() {
+  var header = document.querySelector('.site-header');
+  if (!header) return;
+
+  function updateHeaderShadow() {
+    header.classList.toggle('scrolled', window.scrollY > 8);
+  }
+
+  updateHeaderShadow();
+  window.addEventListener('scroll', updateHeaderShadow, { passive: true });
+}
+
+function initSmoothScroll() {
+  if (prefersReducedMotion()) return;
+
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+    anchor.addEventListener('click', function(event) {
+      var targetId = anchor.getAttribute('href');
+      if (!targetId || targetId === '#') return;
+
+      var target = document.querySelector(targetId);
+      if (!target) return;
+
+      event.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 }
 
 function setEnquiryMessage(message, type) {
@@ -596,38 +986,107 @@ async function submitEnquiry(event) {
 }
 
 function bindEvents() {
-  byId('navToggle').addEventListener('click', function() {
-    byId('siteNav').classList.toggle('open');
-  });
-
-  byId('searchInput').addEventListener('input', function(event) {
+  var searchInput = byId('searchInput');
+  if (searchInput) searchInput.addEventListener('input', function(event) {
     publicState.search = event.target.value.trim();
     renderProperties();
   });
-  byId('purposeFilter').addEventListener('change', function(event) {
+
+  var purposeFilter = byId('purposeFilter');
+  if (purposeFilter) purposeFilter.addEventListener('change', function(event) {
     publicState.purpose = event.target.value;
     renderProperties();
   });
-  byId('typeFilter').addEventListener('change', function(event) {
+
+  var typeFilter = byId('typeFilter');
+  if (typeFilter) typeFilter.addEventListener('change', function(event) {
     publicState.type = event.target.value;
     renderProperties();
   });
-  byId('branchFilter').addEventListener('change', function(event) {
+
+  var branchFilter = byId('branchFilter');
+  if (branchFilter) branchFilter.addEventListener('change', function(event) {
     publicState.branch = event.target.value;
     renderProperties();
   });
 
-  byId('generalEnquiryButton').addEventListener('click', function() {
+  var listingsSearchInput = byId('listingSearchInput');
+  if (listingsSearchInput) listingsSearchInput.addEventListener('input', function(event) {
+    publicState.search = event.target.value.trim();
+    renderListings();
+  });
+
+  var listingPurposeFilter = byId('listingPurposeFilter');
+  if (listingPurposeFilter) listingPurposeFilter.addEventListener('change', function(event) {
+    publicState.purpose = event.target.value;
+    renderListings();
+  });
+
+  var listingTypeFilter = byId('listingTypeFilter');
+  if (listingTypeFilter) listingTypeFilter.addEventListener('change', function(event) {
+    publicState.type = event.target.value;
+    renderListings();
+  });
+
+  var listingStatusFilter = byId('listingStatusFilter');
+  if (listingStatusFilter) listingStatusFilter.addEventListener('change', function(event) {
+    publicState.publicStatus = event.target.value;
+    renderListings();
+  });
+
+  var listingSortSelect = byId('listingSortSelect');
+  if (listingSortSelect) listingSortSelect.addEventListener('change', function(event) {
+    publicState.sort = event.target.value;
+    renderListings();
+  });
+
+  var generalEnquiryButton = byId('generalEnquiryButton');
+  if (generalEnquiryButton) generalEnquiryButton.addEventListener('click', function() {
     openEnquiryModal(null);
   });
 
-  byId('enquiryForm').addEventListener('submit', submitEnquiry);
-  byId('enquiryModalClose').addEventListener('click', closeEnquiryModal);
-  byId('enquiryModal').addEventListener('click', function(event) {
-    if (event.target === byId('enquiryModal')) closeEnquiryModal();
+  var headerEnquiryButton = byId('headerEnquiryButton');
+  if (headerEnquiryButton) {
+    headerEnquiryButton.addEventListener('click', function() {
+      openEnquiryModal(null);
+    });
+  }
+
+  var serviceEnquiryButton = byId('serviceEnquiryButton');
+  if (serviceEnquiryButton) {
+    serviceEnquiryButton.addEventListener('click', function() {
+      openEnquiryModal(null);
+    });
+  }
+
+  var ctaEnquiryButton = byId('ctaEnquiryButton');
+  if (ctaEnquiryButton) {
+    ctaEnquiryButton.addEventListener('click', function() {
+      openEnquiryModal(null);
+    });
+  }
+
+  document.querySelectorAll('.public-enquiry-trigger').forEach(function(button) {
+    button.addEventListener('click', function() {
+      openEnquiryModal(null);
+    });
   });
-  byId('enquiryBranchSelect').addEventListener('change', function(event) {
-    byId('enquiryBranchId').value = event.target.value;
+
+  var enquiryForm = byId('enquiryForm');
+  if (enquiryForm) enquiryForm.addEventListener('submit', submitEnquiry);
+
+  var enquiryModalClose = byId('enquiryModalClose');
+  if (enquiryModalClose) enquiryModalClose.addEventListener('click', closeEnquiryModal);
+
+  var enquiryModal = byId('enquiryModal');
+  if (enquiryModal) enquiryModal.addEventListener('click', function(event) {
+    if (event.target === enquiryModal) closeEnquiryModal();
+  });
+
+  var enquiryBranchSelect = byId('enquiryBranchSelect');
+  if (enquiryBranchSelect) enquiryBranchSelect.addEventListener('change', function(event) {
+    var enquiryBranchId = byId('enquiryBranchId');
+    if (enquiryBranchId) enquiryBranchId.value = event.target.value;
   });
 
   document.addEventListener('click', function(event) {
@@ -637,6 +1096,14 @@ function bindEvents() {
       if (property) openEnquiryModal(property);
     }
   });
+
+  document.addEventListener('error', function(event) {
+    var target = event.target;
+    if (target && target.tagName === 'IMG' && target.closest('.property-image, .featured-property-image, .property-card-image-wrapper')) {
+      target.classList.add('is-broken');
+      target.setAttribute('aria-hidden', 'true');
+    }
+  }, true);
 }
 
 function renderWebsite() {
@@ -652,7 +1119,17 @@ function renderWebsite() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  byId('year').textContent = new Date().getFullYear();
+  var year = byId('year');
+  if (year) year.textContent = new Date().getFullYear();
+  initMobileNavigation();
+  initHeaderShadow();
+  initSmoothScroll();
   bindEvents();
-  loadPublicData();
+  if (byId('listingsGrid')) {
+    loadListingsData();
+  } else if (byId('featuredGrid') && byId('propertiesGrid')) {
+    loadPublicData();
+  } else {
+    loadSharedPublicData();
+  }
 });

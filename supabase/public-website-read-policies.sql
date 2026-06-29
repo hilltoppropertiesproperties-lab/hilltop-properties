@@ -41,7 +41,6 @@ grant select (
   virtual_tour_link,
   youtube_link,
   branch_id,
-  assigned_agent_id,
   created_at
 ) on public.properties to anon;
 

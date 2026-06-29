@@ -78,7 +78,7 @@ PASS. `node --check` passed for:
 
 Static public-page data access remains public-safe:
 
-- `website.js` reads `properties`, `property_images`, `branches`, visible CMS tables, safe `app_settings`, and `public_staff_profiles`.
+- `website.js` reads `properties`, `property_images`, `branches`, visible CMS tables, and safe `app_settings`.
 - `property-details.js` reads active public properties, `property_images`, `branches`, and safe `app_settings`.
 - Public property queries are filtered to `Active` / `Under Offer`.
 - Public enquiry forms insert into `leads`.

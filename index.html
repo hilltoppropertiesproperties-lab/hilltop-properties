@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Find houses, apartments, land, and commercial property for sale and rent in Zambia with Hilltop Properties Zambia." />
+  <meta name="description"
+    content="Find houses, apartments, land, and commercial property for sale and rent in Zambia with Hilltop Properties Zambia." />
   <meta name="keywords" content="Zambia property, Lusaka real estate, Livingstone properties, houses for sale Zambia" />
   <title>Hilltop Properties Zambia</title>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%236b8c52'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='36' font-weight='700' fill='white'%3EH%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="website.css" />
 </head>
-<body>
+
+<body class="public-home">
   <header class="site-header">
     <a class="brand" href="#home" aria-label="Hilltop Properties Zambia home">
       <span class="brand-mark">H</span>
@@ -20,46 +27,66 @@
         <small>Real estate in Lusaka and Livingstone</small>
       </span>
     </a>
-    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">Menu</button>
+    <button class="nav-toggle" id="navToggle" type="button" aria-controls="siteNav" aria-expanded="false"
+      aria-label="Open menu">Menu</button>
     <nav class="site-nav" id="siteNav">
       <a href="#home">Home</a>
-      <a href="#properties">Properties</a>
-      <a href="#about">About</a>
-      <a href="#team">Team</a>
-      <a href="#testimonials">Testimonials</a>
+      <a href="listings.html">Listings</a>
+      <a href="services.html">Services</a>
+      <a href="#why">Why Hilltop</a>
+      <a href="about.html">About</a>
       <a href="#contact">Contact</a>
     </nav>
+    <button class="btn primary header-enquiry-btn" type="button" id="headerEnquiryButton">Enquire</button>
+    <div class="nav-overlay" id="navOverlay"></div>
   </header>
 
   <main>
     <section class="hero" id="home">
-      <div class="hero-media" id="heroMedia"></div>
+      <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="metadata"
+        aria-hidden="true"></video>
+      <div class="hero-overlay" id="heroMedia"></div>
       <div class="hero-content">
         <p class="eyebrow">Hilltop Properties Zambia</p>
-        <h1 id="heroTitle">Find Your Perfect Property in Zambia</h1>
-        <p id="heroSubtitle">Premium homes, apartments, land, and commercial spaces across Lusaka and Livingstone.</p>
+        <h1 id="heroTitle">Find Verified Properties Across Zambia</h1>
+        <p id="heroSubtitle">Buy, rent, and enquire about trusted properties through Hilltop Properties Zambia.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="#properties" id="heroButton">Browse Properties</a>
-          <a class="btn secondary" href="#contact">Contact Us</a>
+          <a class="btn primary" href="listings.html" id="heroButton">View Listings</a>
+          <a class="btn secondary" href="#contact">Make an Enquiry</a>
         </div>
+        <form class="hero-search" action="listings.html" method="get" aria-label="Search listings">
+          <input type="search" name="search" placeholder="Search by location, property type, or reference number..."
+            aria-label="Search by location, property type, or reference number" />
+          <button class="btn primary" type="submit">Search Listings</button>
+        </form>
       </div>
     </section>
 
     <div class="site-status" id="siteStatus">Loading website content...</div>
 
-    <section class="section" id="featured">
-      <div class="section-heading">
-        <p class="eyebrow">Featured</p>
-        <h2>Featured Properties</h2>
+    <section class="featured-properties-section" id="featured">
+      <div class="featured-properties-container">
+        <div class="featured-properties-header">
+          <div>
+            <p class="eyebrow">FEATURED PROPERTIES</p>
+            <h2>Featured Properties</h2>
+            <p>Explore selected homes, rentals, land, and commercial opportunities listed with Hilltop Properties
+              Zambia.</p>
+          </div>
+        </div>
+        <div class="featured-properties-grid" id="featuredGrid"></div>
+        <div class="empty-state" id="featuredEmpty">No featured properties are available yet.</div>
       </div>
-      <div class="property-grid" id="featuredGrid"></div>
-      <div class="empty-state" id="featuredEmpty">No featured properties are available yet.</div>
     </section>
 
     <section class="section properties-section" id="properties">
-      <div class="section-heading">
-        <p class="eyebrow">Listings</p>
-        <h2>Available Properties</h2>
+      <div class="section-heading property-section-heading">
+        <div>
+          <p class="eyebrow">FEATURED PROPERTIES</p>
+          <h2>Featured Properties</h2>
+          <p>Explore selected homes, rentals, land, and commercial opportunities listed with Hilltop Properties Zambia.
+          </p>
+        </div>
       </div>
       <div class="filters">
         <input type="search" id="searchInput" placeholder="Search by title, area, or reference" />
@@ -83,12 +110,101 @@
       <div class="empty-state" id="propertiesEmpty">No matching active properties found.</div>
     </section>
 
+    <section class="section services-section" id="services">
+      <div class="section-heading">
+        <p class="eyebrow">What We Do</p>
+        <h2>Real Estate Services</h2>
+      </div>
+      <div class="services-grid">
+        <article class="service-card">
+          <div class="service-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <h3>Property Sales</h3>
+          <p>Support for buyers, sellers, and investors looking for verified residential, land, and commercial property
+            opportunities.</p>
+        </article>
+        <article class="service-card">
+          <div class="service-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <h3>Property Rentals</h3>
+          <p>Rental matching for tenants and landlords, with practical support around viewings, enquiries, and branch
+            coordination.</p>
+        </article>
+        <article class="service-card">
+          <div class="service-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <h3>Property Verification</h3>
+          <p>Listing checks and document-aware guidance designed to help clients approach property decisions with
+            confidence.</p>
+        </article>
+        <article class="service-card">
+          <div class="service-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18" />
+              <path d="M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4" />
+            </svg>
+          </div>
+          <h3>Branch Support</h3>
+          <p>Local support through Lusaka and Livingstone branch teams for enquiries, follow-ups, and property viewings.
+          </p>
+        </article>
+      </div>
+      <div class="section-action">
+        <button class="btn primary" type="button" id="serviceEnquiryButton">Ask About Services</button>
+      </div>
+    </section>
+
+    <section class="section why-section" id="why">
+      <div class="why-copy">
+        <p class="eyebrow">Why Hilltop</p>
+        <h2>Trusted Guidance For Property Decisions</h2>
+        <p>Hilltop Properties Zambia combines local branch knowledge with professional property support, helping clients
+          inspect, compare, and enquire with clarity.</p>
+      </div>
+      <div class="trust-grid" aria-label="Hilltop trust points">
+        <article class="trust-card">
+          <span>Verified Listings</span>
+          <p>Public listings are presented with clear status, branch, and property details.</p>
+        </article>
+        <article class="trust-card">
+          <span>Branch Support</span>
+          <p>Lusaka and Livingstone teams help route enquiries to the right office.</p>
+        </article>
+        <article class="trust-card">
+          <span>Trusted Agents</span>
+          <p>Staff profiles and branch contacts help clients know who they are dealing with.</p>
+        </article>
+      </div>
+    </section>
+
     <section class="section split-section" id="about">
       <div>
         <p class="eyebrow">About</p>
         <h2 id="aboutTitle">Trusted Property Guidance</h2>
       </div>
-      <p id="aboutContent">Hilltop Properties Zambia helps clients buy, rent, sell, and manage quality real estate across Lusaka and Livingstone.</p>
+      <p id="aboutContent">Hilltop Properties Zambia helps clients buy, rent, sell, and manage quality real estate
+        across Lusaka and Livingstone.</p>
+    </section>
+
+    <section class="section cta-section" id="cta">
+      <div class="cta-inner">
+        <p class="eyebrow">Ready To Talk?</p>
+        <h2>Find A Property With Hilltop Properties Zambia</h2>
+        <p>Send an enquiry and our team will help you take the next step with available listings, branch contacts, and
+          viewing support.</p>
+        <button class="btn primary contact-enquiry-btn" type="button" id="ctaEnquiryButton">Send Enquiry</button>
+      </div>
     </section>
 
     <section class="section" id="team">
@@ -114,7 +230,8 @@
         <p class="eyebrow">Contact</p>
         <h2>Speak With Hilltop Properties</h2>
         <p id="contactIntro">Contact our team for property viewings, valuations, sales, and rentals.</p>
-        <button class="btn primary contact-enquiry-btn" type="button" id="generalEnquiryButton">Send General Enquiry</button>
+        <button class="btn primary contact-enquiry-btn" type="button" id="generalEnquiryButton">Send General
+          Enquiry</button>
       </div>
       <div class="contact-grid" id="contactGrid"></div>
     </section>
@@ -133,7 +250,8 @@
         <input type="hidden" id="enquiryPropertyId" />
         <input type="hidden" id="enquiryBranchId" />
         <label class="honeypot-field" for="enquiryWebsiteUrl">Website URL</label>
-        <input class="honeypot-field" type="text" id="enquiryWebsiteUrl" name="website_url" tabindex="-1" autocomplete="off" />
+        <input class="honeypot-field" type="text" id="enquiryWebsiteUrl" name="website_url" tabindex="-1"
+          autocomplete="off" />
 
         <div class="form-grid">
           <label>
@@ -160,7 +278,9 @@
         </label>
 
         <div class="enquiry-message" id="enquiryMessage" role="status" aria-live="polite"></div>
-        <a class="whatsapp-fallback hidden" id="enquiryWhatsappFallback" href="#" target="_blank" rel="noopener">Contact us on WhatsApp</a>
+        <!-- TODO: Replace with real Hilltop Properties WhatsApp number -->
+        <a class="whatsapp-fallback hidden" id="enquiryWhatsappFallback" href="#" target="_blank" rel="noopener">Contact
+          us on WhatsApp</a>
 
         <button class="btn primary enquiry-submit" type="submit" id="enquirySubmit">Submit Enquiry</button>
       </form>
@@ -168,12 +288,21 @@
   </div>
 
   <footer class="site-footer">
-    <p>&copy; <span id="year"></span> Hilltop Properties Zambia. Public website preview.</p>
-    <a href="login.html">Admin Login</a>
+    <div>
+      <strong>Hilltop Properties Zambia</strong>
+      <p>&copy; <span id="year"></span> Professional real estate support across Lusaka and Livingstone.</p>
+    </div>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="listings.html">Listings</a>
+      <a href="services.html">Services</a>
+      <a href="#contact">Contact</a>
+      <a href="login.html">Admin Login</a>
+    </nav>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="website.js"></script>
 </body>
+
 </html>

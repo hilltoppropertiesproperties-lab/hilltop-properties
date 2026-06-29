@@ -17,7 +17,10 @@ var homepageContent = {
   ctaText:        'Browse Properties',
   ctaLink:        'https://hilltopzambia.com/properties',
   aboutText:      'Hilltop Properties Zambia has been a trusted name in the Zambian real estate market for over a decade, offering personalised service across both residential and commercial sectors.',
-  servicesText:   'We offer property sales, residential and commercial rentals, property management, valuations, and expert investment advice for the Zambian market.'
+  servicesText:   'We offer property sales, residential and commercial rentals, property management, valuations, and expert investment advice for the Zambian market.',
+  heroVideoUrl:   '',
+  heroPosterUrl:  '',
+  heroVideoUpdatedAt: ''
 };
 
 // ── Banners ──────────────────────────────────────────────────
@@ -262,6 +265,8 @@ var cmsTablesAvailable = false;
 var cmsCurrentUser = null;
 var cmsStaffUsers = [];
 var cmsProperties = [];
+var HERO_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+var HERO_VIDEO_MIN_SECONDS = 30;
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -418,9 +423,17 @@ function cmsActionHtml(html) {
 
 function applyCmsPermissions() {
   if (canManageCms()) return;
-  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
+  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
     if (btn) btn.style.display = 'none';
   });
+}
+
+function escapeAttribute(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function quoteId(id) {
@@ -443,7 +456,28 @@ function mapHomepageContent(row) {
     ctaText: row ? (row.hero_button_text || '') : '',
     ctaLink: row ? (row.hero_button_link || '') : '',
     aboutText: row ? (row.about_content || row.about_title || '') : '',
-    servicesText: row ? ([row.contact_phone, row.contact_email, row.contact_address].filter(Boolean).join('\n')) : ''
+    servicesText: row ? ([row.contact_phone, row.contact_email, row.contact_address].filter(Boolean).join('\n')) : '',
+    heroVideoUrl: homepageContent.heroVideoUrl || '',
+    heroPosterUrl: homepageContent.heroPosterUrl || '',
+    heroVideoUpdatedAt: homepageContent.heroVideoUpdatedAt || ''
+  };
+}
+
+function settingValueUrl(row) {
+  if (!row || !row.setting_value) return '';
+  if (typeof row.setting_value === 'string') return row.setting_value;
+  return row.setting_value.url || row.setting_value.value || '';
+}
+
+function mapHeroSettings(rows) {
+  var lookup = {};
+  (rows || []).forEach(function(row) {
+    lookup[row.setting_key] = row;
+  });
+  return {
+    videoUrl: settingValueUrl(lookup.homepage_hero_video_url),
+    posterUrl: settingValueUrl(lookup.homepage_hero_poster_url),
+    updatedAt: settingValueUrl(lookup.homepage_hero_video_updated_at)
   };
 }
 
@@ -591,6 +625,102 @@ function validateCmsImageFile(file) {
     return 'CMS media files must be 5MB or smaller.';
   }
   return null;
+}
+
+function setHeroVideoStatus(message, type) {
+  var status = document.getElementById('heroVideoStatus');
+  if (!status) return;
+  status.textContent = message || '';
+  status.className = 'hero-video-status' + (type ? ' ' + type : '');
+}
+
+function validateHeroPosterFile(file) {
+  return validateCmsImageFile(file);
+}
+
+function getVideoDuration(file) {
+  return new Promise(function(resolve, reject) {
+    var video = document.createElement('video');
+    var objectUrl = URL.createObjectURL(file);
+
+    video.preload = 'metadata';
+    video.onloadedmetadata = function() {
+      URL.revokeObjectURL(objectUrl);
+      resolve(video.duration || 0);
+    };
+    video.onerror = function() {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('The selected video metadata could not be read.'));
+    };
+    video.src = objectUrl;
+  });
+}
+
+async function validateHeroVideoFile(file) {
+  if (!file) return null;
+  var allowedTypes = ['video/mp4', 'video/webm'];
+  if (allowedTypes.indexOf(file.type) === -1) {
+    return 'Please upload an MP4 or WebM video.';
+  }
+  if (file.size > HERO_VIDEO_MAX_BYTES) {
+    return 'Hero video must be 50MB or smaller.';
+  }
+
+  try {
+    var duration = await getVideoDuration(file);
+    if (duration < HERO_VIDEO_MIN_SECONDS) {
+      return 'Hero video must be at least 30 seconds long.';
+    }
+  } catch (error) {
+    console.warn('Hero video duration validation failed.', error);
+    return 'Could not read the selected video. Please choose another MP4 or WebM file.';
+  }
+
+  return null;
+}
+
+function buildHeroMediaPath(kind, file) {
+  var safe = safeFileName(file.name);
+  var extension = safe.indexOf('.') !== -1 ? safe.split('.').pop() : (kind === 'video' ? 'mp4' : 'jpg');
+  return 'hero/hero-' + kind + '-' + Date.now() + '.' + extension;
+}
+
+async function uploadHeroMedia(kind, file) {
+  if (!requireCmsMediaPermission()) return null;
+
+  var supabase = getSupabaseClient();
+  if (!supabase) {
+    setHeroVideoStatus('Supabase is not available. Please check your connection and configuration.', 'error');
+    return null;
+  }
+
+  var path = buildHeroMediaPath(kind, file);
+  var uploadResult = await supabase.storage
+    .from('cms-media')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (uploadResult.error) {
+    console.warn('Hero media upload failed.', uploadResult.error);
+    throw new Error('Could not upload hero media. Run supabase/cms-media-storage.sql and try again.');
+  }
+
+  var publicUrlResult = supabase.storage
+    .from('cms-media')
+    .getPublicUrl(path);
+
+  var publicUrl = publicUrlResult &&
+    publicUrlResult.data &&
+    publicUrlResult.data.publicUrl;
+
+  if (!publicUrl) {
+    throw new Error('Hero media uploaded, but the public URL could not be created.');
+  }
+
+  return publicUrl;
 }
 
 function buildCmsMediaPath(folder, recordId, file) {
@@ -790,6 +920,19 @@ async function loadHomepageContent(supabase) {
   return response.data && response.data.length ? response.data[0] : null;
 }
 
+async function loadHeroVideoSettings(supabase) {
+  var response = await supabase
+    .from('app_settings')
+    .select('setting_key, setting_value')
+    .in('setting_key', [
+      'homepage_hero_video_url',
+      'homepage_hero_poster_url',
+      'homepage_hero_video_updated_at'
+    ]);
+  if (response.error) throw response.error;
+  return response.data || [];
+}
+
 async function loadBanners(supabase) {
   var response = await supabase
     .from('cms_banners')
@@ -865,6 +1008,7 @@ async function loadCMSData() {
     var staffResult = await loadCmsStaffUsers(supabase);
     var propertiesResult = await loadCmsProperties(supabase);
     var homepageResult = await loadHomepageContent(supabase);
+    var heroSettingsResult = await loadHeroVideoSettings(supabase);
     var bannerResult = await loadBanners(supabase);
     var teamResult = await loadTeamProfiles(supabase);
     var testimonialResult = await loadTestimonials(supabase);
@@ -875,7 +1019,11 @@ async function loadCMSData() {
     var staffLookup = buildLookup(cmsStaffUsers);
     var propertyLookup = buildLookup(cmsProperties);
 
+    var heroSettings = mapHeroSettings(heroSettingsResult);
     homepageContent = mapHomepageContent(homepageResult);
+    homepageContent.heroVideoUrl = heroSettings.videoUrl;
+    homepageContent.heroPosterUrl = heroSettings.posterUrl;
+    homepageContent.heroVideoUpdatedAt = heroSettings.updatedAt;
     banners = bannerResult.map(mapBanner);
     teamProfiles = teamResult.map(function(row) { return mapTeamProfile(row, staffLookup); });
     testimonials = testimonialResult.map(mapTestimonial);
@@ -978,6 +1126,7 @@ function renderHomepage() {
   document.getElementById('hpCtaLink').value       = homepageContent.ctaLink;
   document.getElementById('hpAboutText').value     = homepageContent.aboutText;
   document.getElementById('hpServicesText').value  = homepageContent.servicesText;
+  renderHeroVideoPreview();
 }
 
 function readHomepageForm() {
@@ -1000,6 +1149,123 @@ document.getElementById('btnHpPreview').addEventListener('click', function() {
 
 document.getElementById('btnHpPublish').addEventListener('click', function() {
   saveHomepageContent();
+});
+
+function renderHeroVideoPreview() {
+  var preview = document.getElementById('heroVideoPreview');
+  if (!preview) return;
+
+  if (homepageContent.heroVideoUrl) {
+    preview.innerHTML = '<video controls muted preload="metadata"' +
+      (homepageContent.heroPosterUrl ? ' poster="' + escapeAttribute(homepageContent.heroPosterUrl) + '"' : '') +
+      '><source src="' + escapeAttribute(homepageContent.heroVideoUrl) + '"></video>';
+  } else if (homepageContent.heroPosterUrl) {
+    preview.innerHTML = '<img src="' + escapeAttribute(homepageContent.heroPosterUrl) + '" alt="Homepage hero poster preview" />';
+  } else {
+    preview.innerHTML = '<p>No hero video configured yet.</p>';
+  }
+
+  var updated = homepageContent.heroVideoUpdatedAt
+    ? 'Last updated: ' + new Date(homepageContent.heroVideoUpdatedAt).toLocaleString()
+    : '';
+  setHeroVideoStatus(updated, updated ? 'success' : '');
+}
+
+async function saveHeroVideoSettings() {
+  if (!ensureCmsReadyForWrite()) return;
+
+  var videoFile = selectedFile('hpHeroVideoFile');
+  var posterFile = selectedFile('hpHeroPosterFile');
+
+  if (!videoFile && !posterFile) {
+    setHeroVideoStatus('Choose a hero video or poster image before saving.', 'error');
+    return;
+  }
+
+  setHeroVideoStatus('Validating selected media...', '');
+
+  if (videoFile) {
+    var videoError = await validateHeroVideoFile(videoFile);
+    if (videoError) {
+      setHeroVideoStatus(videoError, 'error');
+      showToast(videoError, 'error');
+      return;
+    }
+  }
+
+  if (posterFile) {
+    var posterError = validateHeroPosterFile(posterFile);
+    if (posterError) {
+      setHeroVideoStatus(posterError, 'error');
+      showToast(posterError, 'error');
+      return;
+    }
+  }
+
+  try {
+    var supabase = getSupabaseClient();
+    var videoUrl = homepageContent.heroVideoUrl;
+    var posterUrl = homepageContent.heroPosterUrl;
+
+    setHeroVideoStatus('Uploading...', '');
+    if (videoFile) {
+      videoUrl = await uploadHeroMedia('video', videoFile);
+    }
+    if (posterFile) {
+      posterUrl = await uploadHeroMedia('poster', posterFile);
+    }
+
+    var updatedAt = new Date().toISOString();
+    var rows = [
+      {
+        setting_key: 'homepage_hero_video_url',
+        setting_category: 'public_homepage',
+        setting_value: { url: videoUrl || '' },
+        updated_by: getCurrentStaffId()
+      },
+      {
+        setting_key: 'homepage_hero_poster_url',
+        setting_category: 'public_homepage',
+        setting_value: { url: posterUrl || '' },
+        updated_by: getCurrentStaffId()
+      },
+      {
+        setting_key: 'homepage_hero_video_updated_at',
+        setting_category: 'public_homepage',
+        setting_value: { value: updatedAt },
+        updated_by: getCurrentStaffId()
+      }
+    ];
+
+    var result = await supabase
+      .from('app_settings')
+      .upsert(rows, { onConflict: 'setting_key' });
+
+    if (result.error) throw result.error;
+
+    homepageContent.heroVideoUrl = videoUrl || '';
+    homepageContent.heroPosterUrl = posterUrl || '';
+    homepageContent.heroVideoUpdatedAt = updatedAt;
+
+    var videoInput = document.getElementById('hpHeroVideoFile');
+    var posterInput = document.getElementById('hpHeroPosterFile');
+    if (videoInput) videoInput.value = '';
+    if (posterInput) posterInput.value = '';
+
+    renderHeroVideoPreview();
+    await logCmsActivity('CMS_HERO_VIDEO_UPDATED', 'Homepage hero video settings were updated.');
+    setHeroVideoStatus('Saved successfully.', 'success');
+    showToast('Hero video saved successfully.', 'success');
+  } catch (error) {
+    console.warn('Hero video save failed.', error);
+    var message = error && error.message ? error.message : 'Hero video could not be saved. Please try again.';
+    setHeroVideoStatus(message, 'error');
+    showToast(message, 'error');
+  }
+}
+
+document.getElementById('btnHeroVideoSave').addEventListener('click', function() {
+  saveHeroVideoSettings();
 });
 
 async function saveHomepageContent() {

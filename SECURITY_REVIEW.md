@@ -50,7 +50,7 @@ Public pages read only public-safe data:
 - `branches`
 - visible CMS tables
 - safe `app_settings` keys
-- `public_staff_profiles` view
+- visible CMS team profiles
 
 Public pages do not read:
 

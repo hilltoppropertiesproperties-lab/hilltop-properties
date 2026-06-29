@@ -237,6 +237,35 @@
             </div>
           </div>
 
+          <div class="homepage-form-card hero-video-card">
+            <h3 class="form-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              Homepage Hero Video
+            </h3>
+            <div class="hero-video-preview" id="heroVideoPreview">
+              <p>No hero video configured yet.</p>
+            </div>
+            <div class="form-group full">
+              <label>Hero Video File</label>
+              <input type="file" id="hpHeroVideoFile" accept="video/mp4,video/webm" />
+            </div>
+            <div class="form-group full">
+              <label>Poster / Fallback Image</label>
+              <input type="file" id="hpHeroPosterFile" accept="image/jpeg,image/png,image/webp" />
+            </div>
+            <ul class="hero-video-guidance">
+              <li>Recommended video length: at least 30 seconds.</li>
+              <li>Recommended format: MP4 or WebM.</li>
+              <li>Recommended size: keep compressed for fast loading. Maximum upload: 50MB.</li>
+              <li>Video will autoplay muted and loop on the public homepage.</li>
+            </ul>
+            <div class="hero-video-status" id="heroVideoStatus" role="status" aria-live="polite"></div>
+            <button class="action-btn primary" type="button" id="btnHeroVideoSave">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Hero Video
+            </button>
+          </div>
+
           <div class="homepage-form-card">
             <h3 class="form-card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

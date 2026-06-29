@@ -82,6 +82,32 @@ function sortImages(images) {
   });
 }
 
+function getBranchName(branchId) {
+  var branch = detailsState.branches.find(function(item) {
+    return String(item.id) === String(branchId);
+  });
+  return branch ? branch.name : 'Hilltop Branch';
+}
+
+function getSimilarCoverImage(propertyId) {
+  var rows = (detailsState.similarImages || [])
+    .filter(function(image) { return String(image.property_id) === String(propertyId); })
+    .sort(function(a, b) {
+      if (a.is_cover && !b.is_cover) return -1;
+      if (!a.is_cover && b.is_cover) return 1;
+      return Number(a.display_order || 0) - Number(b.display_order || 0);
+    });
+  return rows.length ? rows[0].image_url : '';
+}
+
+function propertyStatusClass(status) {
+  var value = String(status || '').toLowerCase();
+  if (value === 'active') return 'status-active';
+  if (value === 'under offer') return 'status-offer';
+  if (value === 'sold' || value === 'let / rented') return 'status-closed';
+  return 'status-default';
+}
+
 async function safeSelect(label, queryBuilder, fallback) {
   try {
     var result = await queryBuilder();
@@ -112,7 +138,7 @@ async function loadPropertyDetails() {
 
   var propertyQuery = supabase
     .from('properties')
-    .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, virtual_tour_link, youtube_link, branch_id, assigned_agent_id, created_at')
+    .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, virtual_tour_link, youtube_link, branch_id, created_at')
     .in('status', ['Active', 'Under Offer'])
     .limit(1);
 
@@ -123,8 +149,16 @@ async function loadPropertyDetails() {
   }, []);
 
   if (!propertyResult.length) {
-    showStatus('This property is no longer available.', 'error');
-    return;
+    // Mock data fallback for visual testing
+    if (typeof getMockProperties === 'function') {
+      console.warn('Using mock property data for visual testing.');
+      var mockProps = getMockProperties();
+      var match = id ? mockProps.find(function(p) { return p.id === id; }) : null;
+      propertyResult = match ? [match] : [mockProps[0]];
+    } else {
+      showStatus('This property is no longer available.', 'error');
+      return;
+    }
   }
 
   detailsState.property = propertyResult[0];
@@ -162,14 +196,54 @@ async function loadPropertyDetails() {
 
   detailsState.images = sortImages(results[0]);
   detailsState.branches = results[1];
+
+  // Mock fallback for branches and images on details page
+  if (!detailsState.branches.length && typeof getMockBranches === 'function') {
+    detailsState.branches = getMockBranches();
+  }
+  if (!detailsState.images.length && typeof getMockPropertyImages === 'function') {
+    var pid = detailsState.property.id;
+    detailsState.images = sortImages(getMockPropertyImages().filter(function(img) {
+      return String(img.property_id) === String(pid);
+    }));
+  }
+
   detailsState.appSettings = {};
   (results[2] || []).forEach(function(row) {
     detailsState.appSettings[row.setting_key] = row.setting_value || {};
   });
-  detailsState.similar = (results[3] || []).filter(function(property) {
+
+  var similarCandidates = results[3] || [];
+  if (!similarCandidates.length && typeof getMockProperties === 'function') {
+    similarCandidates = getMockProperties().filter(function(p) {
+      return p.id !== detailsState.property.id && (p.status === 'Active' || p.status === 'Under Offer');
+    });
+  }
+  detailsState.similar = similarCandidates.filter(function(property) {
     return property.purpose === detailsState.property.purpose
       || property.property_type === detailsState.property.property_type;
   }).slice(0, 3);
+
+  // Fetch similar property images
+  var similarIds = detailsState.similar.map(function(p) { return p.id; });
+  if (similarIds.length) {
+    var similarImages = await safeSelect('similar images', function() {
+      return supabase
+        .from('property_images')
+        .select('property_id, image_url, display_order, is_cover')
+        .in('property_id', similarIds)
+        .order('display_order', { ascending: true });
+    }, []);
+    // Mock fallback for similar images
+    if (!(similarImages && similarImages.length) && typeof getMockPropertyImages === 'function') {
+      similarImages = getMockPropertyImages().filter(function(img) {
+        return similarIds.indexOf(img.property_id) !== -1;
+      });
+    }
+    detailsState.similarImages = similarImages || [];
+  } else {
+    detailsState.similarImages = [];
+  }
 
   renderDetails();
   hideStatus();
@@ -190,12 +264,30 @@ function renderGallery() {
   var selected = images[detailsState.selectedImageIndex];
 
   if (!images.length) {
-    mainImage.innerHTML = '<span>Hilltop Property</span>';
+    mainImage.innerHTML = [
+      '<div class="property-details-placeholder">',
+        '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+          '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+          '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
+        '</svg>',
+        '<span class="placeholder-text">Hilltop Property</span>',
+      '</div>'
+    ].join('');
     thumbnailRow.innerHTML = '';
     return;
   }
 
-  mainImage.innerHTML = '<img src="' + escapeHtml(selected.image_url) + '" alt="' + escapeHtml(detailsState.property.title) + '" />';
+  mainImage.innerHTML = [
+    '<img src="' + escapeHtml(selected.image_url) + '" alt="' + escapeHtml(detailsState.property.title) + '" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';" />',
+    '<div class="property-details-placeholder" style="display: none;">',
+      '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+        '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+        '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
+      '</svg>',
+      '<span class="placeholder-text">Hilltop Property</span>',
+    '</div>'
+  ].join('');
+
   thumbnailRow.innerHTML = images.map(function(image, index) {
     return [
       '<button class="thumb-button' + (index === detailsState.selectedImageIndex ? ' active' : '') + '" type="button" data-image-index="' + index + '">',
@@ -273,13 +365,94 @@ function renderSimilar() {
   }
 
   grid.innerHTML = detailsState.similar.map(function(property) {
+    var image = getSimilarCoverImage(property.id);
+    var detailsUrl = 'property-details.html?id=' + encodeURIComponent(property.id);
+    var statusClass = propertyStatusClass(property.status);
+    var location = property.area || getBranchName(property.branch_id) || 'Location available on request';
+    var imageMarkup = image ? '<img class="property-card-img" src="' + escapeHtml(image) + '" alt="" loading="lazy" />' : '';
+
+    var specHtmls = [];
+    var isLand = String(property.property_type || '').toLowerCase() === 'land';
+
+    if (!isLand) {
+      if (Number(property.bedrooms) > 0) {
+        specHtmls.push([
+          '<span class="property-spec-item" title="Bedrooms">',
+            '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+              '<path d="M2 20V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12"></path>',
+              '<path d="M2 14h20"></path>',
+              '<rect x="6" y="10" width="4" height="4"></rect>',
+              '<rect x="14" y="10" width="4" height="4"></rect>',
+            '</svg>',
+            '<span>' + property.bedrooms + ' beds</span>',
+          '</span>'
+        ].join(''));
+      }
+      if (Number(property.bathrooms) > 0) {
+        specHtmls.push([
+          '<span class="property-spec-item" title="Bathrooms">',
+            '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+              '<path d="M9 6v6H5v-6h4M2 11h20M2 17a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5H2z"></path>',
+            '</svg>',
+            '<span>' + property.bathrooms + ' baths</span>',
+          '</span>'
+        ].join(''));
+      }
+      if (Number(property.garages) > 0) {
+        specHtmls.push([
+          '<span class="property-spec-item" title="Garages">',
+            '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+              '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+              '<rect x="6" y="12" width="12" height="10"></rect>',
+            '</svg>',
+            '<span>' + property.garages + ' garages</span>',
+          '</span>'
+        ].join(''));
+      }
+    }
+    if (Number(property.square_metres) > 0) {
+      specHtmls.push([
+        '<span class="property-spec-item" title="Area">',
+          '<svg class="property-spec-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+            '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>',
+            '<path d="M9 3v18M15 3v18M3 9h18M3 15h18"></path>',
+          '</svg>',
+          '<span>' + Number(property.square_metres).toLocaleString('en-ZM') + ' sqm</span>',
+        '</span>'
+      ].join(''));
+    }
+    var specsHtml = specHtmls.length ? '<div class="property-card-specs">' + specHtmls.join('') + '</div>' : '';
+
     return [
-      '<a class="similar-card" href="property-details.html?id=' + encodeURIComponent(property.id) + '">',
-        '<span class="ref">' + escapeHtml(property.reference_number) + '</span>',
-        '<h3>' + escapeHtml(property.title) + '</h3>',
-        '<p>' + escapeHtml(property.area || 'Zambia') + ' | ' + escapeHtml(property.property_type) + '</p>',
-        '<strong>' + formatPrice(property.price, property.purpose) + '</strong>',
-      '</a>'
+      '<article class="property-card">',
+        '<div class="property-card-image-wrapper">',
+          '<div class="property-card-placeholder" aria-hidden="true">',
+            '<svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+              '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
+              '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
+            '</svg>',
+            '<span class="placeholder-text">Hilltop Property</span>',
+          '</div>',
+          imageMarkup,
+          '<div class="property-card-badges">',
+            '<span class="badge purpose-badge">' + escapeHtml(property.purpose) + '</span>',
+            '<span class="badge status-badge ' + statusClass + '">' + escapeHtml(property.status) + '</span>',
+          '</div>',
+          '<div class="property-card-overlay-label">',
+            '<span class="property-card-ref">' + escapeHtml(property.reference_number) + '</span>',
+            '<h4 class="property-card-overlay-title">' + escapeHtml(property.title) + '</h4>',
+          '</div>',
+        '</div>',
+        '<div class="property-card-body">',
+          '<div class="property-card-price">' + formatPrice(property.price, property.purpose) + '</div>',
+          '<p class="property-card-location">' + escapeHtml(location) + ' &middot; ' + escapeHtml(property.property_type) + '</p>',
+          specsHtml,
+          '<div class="property-card-actions">',
+            '<a class="btn property-card-btn-primary" href="' + detailsUrl + '">View Details</a>',
+            '<button class="btn property-card-btn-secondary enquire-btn" type="button" data-property-id="' + escapeHtml(property.id) + '">Enquire</button>',
+          '</div>',
+        '</div>',
+      '</article>'
     ].join('');
   }).join('');
   section.classList.remove('hidden');
@@ -453,6 +626,22 @@ function bindEvents() {
     detailsState.selectedImageIndex = Number(button.dataset.imageIndex || 0);
     renderGallery();
   });
+
+  document.addEventListener('error', function(event) {
+    var target = event.target;
+    if (target && target.tagName === 'IMG') {
+      if (target.closest('.property-card-image-wrapper')) {
+        target.classList.add('is-broken');
+        target.setAttribute('aria-hidden', 'true');
+      } else if (target.closest('#mainImage')) {
+        target.style.display = 'none';
+        var placeholder = target.nextElementSibling;
+        if (placeholder && placeholder.classList.contains('property-details-placeholder')) {
+          placeholder.style.display = 'flex';
+        }
+      }
+    }
+  }, true);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
