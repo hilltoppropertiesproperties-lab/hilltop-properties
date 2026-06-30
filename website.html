@@ -64,82 +64,211 @@
 
     <div class="site-status" id="siteStatus">Loading website content...</div>
 
-    <section class="featured-properties-section" id="featured">
-      <div class="featured-properties-container">
-        <div class="featured-properties-header">
-          <div>
-            <p class="eyebrow">FEATURED PROPERTIES</p>
-            <h2>Featured Properties</h2>
-            <p>Explore selected homes, rentals, land, and commercial opportunities listed with Hilltop Properties
-              Zambia.</p>
-          </div>
+    <section class="discovery-bridge" aria-labelledby="discoveryTitle">
+      <div class="discovery-bridge-inner">
+        <div class="discovery-copy">
+          <p class="eyebrow">Property Discovery</p>
+          <h2 id="discoveryTitle">Explore Properties</h2>
+          <p>Find homes, rentals, land, and commercial opportunities across Lusaka, Livingstone, and other available
+            locations.</p>
         </div>
-        <div class="featured-properties-grid" id="featuredGrid"></div>
-        <div class="empty-state" id="featuredEmpty">No featured properties are available yet.</div>
-        <div class="featured-properties-action">
-          <a class="btn primary view-more-btn" href="listings.html">
-            <span>View More Properties</span>
-            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </a>
+        <div class="discovery-panel">
+          <div class="discovery-grid" aria-label="Property discovery shortcuts">
+            <a class="discovery-card discovery-card--location" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11z"></path>
+                <circle cx="12" cy="10" r="2.5"></circle>
+              </svg>
+              <span>Lusaka</span>
+            </a>
+            <a class="discovery-card discovery-card--location" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11z"></path>
+                <circle cx="12" cy="10" r="2.5"></circle>
+              </svg>
+              <span>Livingstone</span>
+            </a>
+            <a class="discovery-card discovery-card--category" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 11l9-7 9 7"></path>
+                <path d="M5 10v10h14V10"></path>
+                <path d="M9 20v-6h6v6"></path>
+              </svg>
+              <span>Houses</span>
+            </a>
+            <a class="discovery-card discovery-card--category" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                <path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"></path>
+              </svg>
+              <span>Apartments</span>
+            </a>
+            <a class="discovery-card discovery-card--category" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6l6-2 6 2 4-2v14l-4 2-6-2-6 2V6z"></path>
+                <path d="M10 4v14M16 6v14"></path>
+              </svg>
+              <span>Land</span>
+            </a>
+            <a class="discovery-card discovery-card--category" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 21V7l8-4 8 4v14"></path>
+                <path d="M8 21v-8h8v8M8 9h8"></path>
+              </svg>
+              <span>Commercial</span>
+            </a>
+            <a class="discovery-card discovery-card--purpose" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 13l-7 7-9-9V4h7l9 9z"></path>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              </svg>
+              <span>For Sale</span>
+            </a>
+            <a class="discovery-card discovery-card--purpose" href="listings.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 7a4 4 0 1 1-3.4 6.1L3 20.7V17h3.7l1.2-1.2"></path>
+                <circle cx="14" cy="7" r="1"></circle>
+              </svg>
+              <span>For Rent</span>
+            </a>
+          </div>
+          <a class="discovery-link" href="listings.html">View all listings <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
 
-    <section class="section services-section" id="services">
-      <div class="section-heading">
-        <p class="eyebrow">What We Do</p>
-        <h2>Real Estate Services</h2>
-      </div>
-      <div class="services-grid">
-        <article class="service-card">
-          <div class="service-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
+    <section class="featured-services-scroll-stage">
+      <section class="featured-properties-section featured-pin-layer" id="featured">
+        <div class="featured-properties-container">
+          <div class="featured-properties-header">
+            <div>
+              <p class="eyebrow">FEATURED PROPERTIES</p>
+              <h2>Featured Properties</h2>
+              <p>Explore selected homes, rentals, land, and commercial opportunities listed with Hilltop Properties
+                Zambia.</p>
+            </div>
           </div>
-          <h3>Property Sales</h3>
-          <p>Support for buyers, sellers, and investors looking for verified residential, land, and commercial property
-            opportunities.</p>
-        </article>
-        <article class="service-card">
-          <div class="service-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
+          <div class="featured-properties-grid" id="featuredGrid"></div>
+          <div class="empty-state" id="featuredEmpty">No featured properties are listed yet.</div>
+          <div class="featured-properties-action">
+            <a class="btn primary view-more-btn" href="listings.html">
+              <span>View More Properties</span>
+              <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </a>
           </div>
-          <h3>Property Rentals</h3>
-          <p>Rental matching for tenants and landlords, with practical support around viewings, enquiries, and branch
-            coordination.</p>
-        </article>
-        <article class="service-card">
-          <div class="service-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <h3>Property Verification</h3>
-          <p>Listing checks and document-aware guidance designed to help clients approach property decisions with
-            confidence.</p>
-        </article>
-        <article class="service-card">
-          <div class="service-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21h18" />
-              <path d="M3 7v1a3 3 0 006 0V7m0 1a3 3 0 006 0V7m0 1a3 3 0 006 0V7H3l2-4h14l2 4" />
-            </svg>
-          </div>
-          <h3>Branch Support</h3>
-          <p>Local support through Lusaka and Livingstone branch teams for enquiries, follow-ups, and property viewings.
+        </div>
+      </section>
+
+      <section class="section services-section services-cover-layer" id="services">
+        <div class="section-heading">
+          <p class="eyebrow">WHAT WE DO</p>
+          <h2>Real Estate Services</h2>
+          <p class="section-subheading">
+            From verified listings to client enquiries and branch support, Hilltop Properties Zambia helps buyers,
+            tenants, sellers, and landlords move with confidence.
           </p>
-        </article>
-      </div>
-      <div class="section-action">
-        <button class="btn primary" type="button" id="serviceEnquiryButton">Ask About Services</button>
-      </div>
+        </div>
+
+        <div class="services-showcase-wrapper">
+          <div class="services-showcase-grid">
+            <article class="service-showcase-card" data-service="sales">
+              <div class="service-showcase-media">
+                <div class="visual-card-bg sales-gradient"></div>
+                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80"
+                  alt="Property Sales" class="service-media-image" loading="lazy">
+              </div>
+              <div class="service-showcase-copy">
+                <span class="service-badge">For Buyers & Sellers</span>
+                <h3>Property Sales</h3>
+                <p>Verified sales support for homes, land, and commercial property.</p>
+                <div class="service-tags">
+                  <span class="service-tag">Market Valuation</span>
+                  <span class="service-tag">Verified Listings</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="service-showcase-card" data-service="rentals">
+              <div class="service-showcase-media">
+                <div class="visual-card-bg rentals-gradient"></div>
+                <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80"
+                  alt="Property Rentals" class="service-media-image" loading="lazy">
+              </div>
+              <div class="service-showcase-copy">
+                <span class="service-badge">For Tenants & Landlords</span>
+                <h3>Property Rentals</h3>
+                <p>Rental matching and viewing support for tenants and landlords.</p>
+                <div class="service-tags">
+                  <span class="service-tag">Tenant Screening</span>
+                  <span class="service-tag">Flexible Terms</span>
+                </div>
+              </div>
+            </article>
+
+            <article
+              class="service-showcase-card service-showcase-card--featured service-showcase-card--case-study is-case-study service-showcase-card--marketing"
+              data-service="marketing">
+              <div class="service-showcase-media service-showcase-media--case-study">
+                <div class="visual-card-bg marketing-gradient"></div>
+                <img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80"
+                  alt="Property Marketing" class="service-media-image" loading="lazy">
+                <a class="case-study-overlay-pill" href="services.html">View Case Study</a>
+              </div>
+              <div class="service-showcase-copy">
+                <span class="service-badge">Digital Reach</span>
+                <h3>Property Marketing</h3>
+                <p>Premium property presentation across web and social channels.</p>
+                <div class="service-tags">
+                  <span class="service-tag">High-Quality Media</span>
+                  <span class="service-tag">Targeted Campaigns</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="service-showcase-card" data-service="verification">
+              <div class="service-showcase-media">
+                <div class="visual-card-bg verification-gradient"></div>
+                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80"
+                  alt="Property Verification" class="service-media-image" loading="lazy">
+              </div>
+              <div class="service-showcase-copy">
+                <span class="service-badge">Trust & Compliance</span>
+                <h3>Property Verification</h3>
+                <p>Document-aware checks before listings go public.</p>
+                <div class="service-tags">
+                  <span class="service-tag">Title Searches</span>
+                  <span class="service-tag">Physical Inspection</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="service-showcase-card" data-service="support">
+              <div class="service-showcase-media">
+                <div class="visual-card-bg support-gradient"></div>
+                <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"
+                  alt="Branch Support" class="service-media-image" loading="lazy">
+              </div>
+              <div class="service-showcase-copy">
+                <span class="service-badge">Branch Network</span>
+                <h3>Branch Support</h3>
+                <p>Local teams coordinate viewings, enquiries, and follow-up.</p>
+                <div class="service-tags">
+                  <span class="service-tag">Local Experts</span>
+                  <span class="service-tag">Guided Viewings</span>
+                </div>
+              </div>
+            </article>
+
+          </div>
+        </div>
+
+        <div class="section-action">
+          <button class="btn primary" type="button" id="serviceEnquiryButton">Ask About Services</button>
+        </div>
+      </section>
     </section>
 
     <section class="section why-section" id="why">

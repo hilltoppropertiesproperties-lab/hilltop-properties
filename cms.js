@@ -203,6 +203,104 @@ var featuredProperties = [
   }
 ];
 
+var SERVICE_SHOWCASE_LAYOUT_BLUEPRINT = [
+  {
+    key: 'sales',
+    id: 'sales',
+    order: 1,
+    title: 'Property Sales',
+    badge: 'For Buyers & Sellers',
+    description: 'Helping buyers, sellers, and investors find, list, and move forward with verified residential, land, and commercial property opportunities.',
+    highlights: [
+      'Market valuation and pricing guidance',
+      'Verified listings coordinated with property owners',
+      'Investment support for yields and growth'
+    ],
+    iconKey: 'sales',
+    visualTheme: 'sales',
+    imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80',
+    imageAlt: 'Property sales service',
+    label: 'Top Left Card'
+  },
+  {
+    key: 'rentals',
+    id: 'rentals',
+    order: 2,
+    title: 'Property Rentals',
+    badge: 'For Tenants & Landlords',
+    description: 'Supporting tenants and landlords with rental matching, enquiries, viewings, and branch-level coordination.',
+    highlights: [
+      'Tenant screening and references',
+      'Flexible lease coordination',
+      'Lusaka and Livingstone branch support'
+    ],
+    iconKey: 'rentals',
+    visualTheme: 'rentals',
+    imageUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80',
+    imageAlt: 'Property rentals service',
+    label: 'Top Right Card'
+  },
+  {
+    key: 'marketing',
+    id: 'marketing',
+    order: 3,
+    title: 'Property Marketing',
+    badge: 'Digital Reach',
+    description: 'Presenting properties professionally through photos, descriptions, references, website listings, social media, and enquiry support.',
+    highlights: [
+      'Clean listings and photography',
+      'Dedicated social media reach',
+      'Immediate branch lead routing'
+    ],
+    iconKey: 'marketing',
+    visualTheme: 'marketing',
+    imageUrl: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80',
+    imageAlt: 'Property marketing service',
+    isCaseStudy: true,
+    caseStudyLabel: 'View Case Study',
+    caseStudyUrl: 'services.html',
+    label: 'Middle Featured Video Card'
+  },
+  {
+    key: 'verification',
+    id: 'verification',
+    order: 4,
+    title: 'Property Verification',
+    badge: 'Trust & Compliance',
+    description: 'Checking listing details, ownership information, documents, location, pricing, and property status before properties are presented publicly.',
+    highlights: [
+      'Ownership and boundary confirmation',
+      'On-site coordinates and photo verification',
+      'Fair pricing against local benchmarks'
+    ],
+    iconKey: 'verification',
+    visualTheme: 'verification',
+    imageUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80',
+    imageAlt: 'Property verification service',
+    label: 'Bottom Left Card'
+  },
+  {
+    key: 'branch-support',
+    id: 'support',
+    order: 5,
+    title: 'Branch Support',
+    badge: 'Branch Network',
+    description: 'Lusaka and Livingstone branch teams support enquiries, property viewings, follow-ups, and client guidance.',
+    highlights: [
+      'Regional specialists in key locations',
+      'Coordinated site visits',
+      'In-person branch staff support'
+    ],
+    iconKey: 'branch-support',
+    visualTheme: 'support',
+    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    imageAlt: 'Branch support service',
+    label: 'Bottom Right Card'
+  }
+];
+
+var serviceShowcaseItems = buildDefaultServiceShowcaseItems('demo-service-');
+
 // ── News / Articles ───────────────────────────────────────────
 // Later: supabase.from('articles').select('*')
 var articles = [
@@ -267,6 +365,9 @@ var cmsStaffUsers = [];
 var cmsProperties = [];
 var HERO_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 var HERO_VIDEO_MIN_SECONDS = 30;
+var SERVICE_CASE_STUDY_VIDEO_MAX_BYTES = 30 * 1024 * 1024;
+var SERVICE_SHOWCASE_ICON_KEYS = ['sales', 'rentals', 'verification', 'branch-support', 'marketing'];
+var SERVICE_SHOWCASE_THEMES = ['sales', 'rentals', 'verification', 'support', 'marketing'];
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -423,7 +524,7 @@ function cmsActionHtml(html) {
 
 function applyCmsPermissions() {
   if (canManageCms()) return;
-  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
+  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddServiceShowcase,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
     if (btn) btn.style.display = 'none';
   });
 }
@@ -434,6 +535,12 @@ function escapeAttribute(value) {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function escapeCmsHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, function(ch) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+  });
 }
 
 function quoteId(id) {
@@ -543,6 +650,151 @@ function mapFeaturedProperty(row, propertyLookup) {
   };
 }
 
+function mapServiceShowcaseItem(row) {
+  return {
+    id: row.id,
+    order: row.display_order || 0,
+    active: Boolean(row.is_active),
+    status: row.is_active ? 'Active' : 'Hidden',
+    title: row.title || '',
+    badge: row.badge || '',
+    description: row.description || '',
+    highlights: Array.isArray(row.highlights) ? row.highlights : [],
+    iconKey: row.icon_key || '',
+    imageUrl: row.image_url || '',
+    imageAlt: row.image_alt || '',
+    visualTheme: row.visual_theme || '',
+    isCaseStudy: Boolean(row.is_case_study),
+    caseStudyLabel: row.case_study_label || 'View Case Study',
+    caseStudyUrl: row.case_study_url || '',
+    hoverVideoUrl: row.hover_video_url || '',
+    hoverVideoPosterUrl: row.hover_video_poster_url || ''
+  };
+}
+
+function buildDefaultServiceShowcaseItems(idPrefix) {
+  return SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.map(function(item) {
+    return {
+      id: String(idPrefix || '') + item.id,
+      order: item.order,
+      active: true,
+      status: 'Active',
+      title: item.title,
+      badge: item.badge,
+      description: item.description,
+      highlights: item.highlights.slice(),
+      iconKey: item.iconKey,
+      imageUrl: item.imageUrl || '',
+      imageAlt: item.imageAlt || item.title,
+      visualTheme: item.visualTheme,
+      isCaseStudy: Boolean(item.isCaseStudy),
+      caseStudyLabel: item.caseStudyLabel || 'View Case Study',
+      caseStudyUrl: item.caseStudyUrl || '',
+      hoverVideoUrl: '',
+      hoverVideoPosterUrl: ''
+    };
+  });
+}
+
+function getServiceShowcaseLayoutByKey(key) {
+  return SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.find(function(layout) {
+    return layout.key === key;
+  }) || null;
+}
+
+function serviceShowcaseLayoutKey(item) {
+  var iconKey = String(item && item.iconKey || '').toLowerCase();
+  var title = String(item && item.title || '').toLowerCase();
+
+  if (iconKey === 'sales') return 'sales';
+  if (iconKey === 'rentals') return 'rentals';
+  if (iconKey === 'marketing') return 'marketing';
+  if (iconKey === 'verification') return 'verification';
+  if (iconKey === 'branch-support') return 'branch-support';
+  if (iconKey) return '';
+
+  if (title === 'property sales') return 'sales';
+  if (title === 'property rentals') return 'rentals';
+  if (title === 'property marketing') return 'marketing';
+  if (title === 'property verification') return 'verification';
+  if (title === 'branch support') return 'branch-support';
+  return '';
+}
+
+function servicePanelDomKey(key) {
+  return String(key || '').replace(/[^a-z0-9]+/g, '_');
+}
+
+function servicePanelFieldId(layoutKey, fieldName) {
+  return 'svc_' + servicePanelDomKey(layoutKey) + '_' + fieldName;
+}
+
+function getServiceShowcaseItemByLayoutKey(layoutKey) {
+  return serviceShowcaseItems.find(function(item) {
+    return serviceShowcaseLayoutKey(item) === layoutKey;
+  }) || null;
+}
+
+function getServiceShowcasePanelItem(layout) {
+  return getServiceShowcaseItemByLayoutKey(layout.key) || buildDefaultServiceShowcaseItems('new-service-').find(function(item) {
+    return serviceShowcaseLayoutKey(item) === layout.key;
+  }) || {
+    id: 'new-service-' + layout.key,
+    order: layout.order,
+    active: true,
+    status: 'Active',
+    title: layout.title,
+    badge: layout.badge,
+    description: layout.description,
+    highlights: layout.highlights.slice(),
+    iconKey: layout.iconKey,
+    imageUrl: '',
+    imageAlt: layout.title,
+    visualTheme: layout.visualTheme,
+    isCaseStudy: Boolean(layout.isCaseStudy),
+    caseStudyLabel: layout.caseStudyLabel || 'View Case Study',
+    caseStudyUrl: '',
+    hoverVideoUrl: '',
+    hoverVideoPosterUrl: ''
+  };
+}
+
+function getServiceShowcaseLayoutMeta(item) {
+  var key = serviceShowcaseLayoutKey(item);
+  return SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.find(function(layout) {
+    return layout.key === key;
+  }) || {
+    key: key || 'custom',
+    label: 'Custom Card',
+    title: item && item.title ? item.title : 'Custom Service'
+  };
+}
+
+function getServiceShowcasePreviewImage(item) {
+  return item.hoverVideoPosterUrl || item.imageUrl || '';
+}
+
+function getServiceShowcasePayloadFromBlueprint(item) {
+  return {
+    display_order: item.order,
+    is_active: true,
+    title: item.title,
+    badge: item.badge,
+    description: item.description,
+    highlights: item.highlights.slice(0, 3),
+    icon_key: item.iconKey,
+    image_url: item.imageUrl || null,
+    image_alt: item.imageAlt || item.title,
+    visual_theme: item.visualTheme,
+    is_case_study: Boolean(item.isCaseStudy),
+    case_study_label: item.caseStudyLabel || 'View Case Study',
+    case_study_url: item.caseStudyUrl || null,
+    hover_video_url: null,
+    hover_video_poster_url: null,
+    updated_at: new Date().toISOString()
+  };
+}
+
 function getCurrentStaffId() {
   return (cmsCurrentUser || window.hilltopCurrentUser || {}).id || null;
 }
@@ -623,6 +875,18 @@ function validateCmsImageFile(file) {
   }
   if (file.size > 5 * 1024 * 1024) {
     return 'CMS media files must be 5MB or smaller.';
+  }
+  return null;
+}
+
+function validateServiceShowcaseVideoFile(file) {
+  if (!file) return null;
+  var allowedTypes = ['video/mp4', 'video/webm'];
+  if (allowedTypes.indexOf(file.type) === -1) {
+    return 'Please upload an MP4 or WebM video.';
+  }
+  if (file.size > SERVICE_CASE_STUDY_VIDEO_MAX_BYTES) {
+    return 'Case study hover video must be 30MB or smaller.';
   }
   return null;
 }
@@ -786,6 +1050,69 @@ async function uploadCmsMedia(folder, recordId, file) {
   return publicUrl;
 }
 
+function buildServiceShowcaseMediaPath(kind, file, serviceKey) {
+  var safe = safeFileName(file.name);
+  var extension = safe.indexOf('.') !== -1 ? safe.split('.').pop() : (kind === 'video' ? 'mp4' : 'jpg');
+  if (kind === 'video') {
+    return 'services-showcase/videos/service-case-study-' + Date.now() + '.' + extension;
+  }
+  if (kind === 'poster') {
+    return 'services-showcase/posters/service-case-study-poster-' + Date.now() + '.' + extension;
+  }
+  return 'services-showcase/images/service-' + servicePanelDomKey(serviceKey || 'service').replace(/_/g, '-') + '-' + Date.now() + '.' + extension;
+}
+
+async function uploadServiceShowcaseMedia(kind, file, serviceKey) {
+  if (!requireCmsMediaPermission()) return null;
+
+  var validationError = kind === 'video'
+    ? validateServiceShowcaseVideoFile(file)
+    : validateCmsImageFile(file);
+  if (validationError) {
+    showToast(validationError, 'error');
+    return null;
+  }
+
+  var supabase = getSupabaseClient();
+  if (!supabase) {
+    showToast('Supabase is not available. Please check your connection and configuration.', 'error');
+    return null;
+  }
+
+  var path = buildServiceShowcaseMediaPath(kind, file, serviceKey);
+  showToast('Uploading Services Showcase media...', 'success');
+
+  var uploadResult = await supabase.storage
+    .from('cms-media')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (uploadResult.error) {
+    console.warn('Services Showcase media upload failed.', uploadResult.error);
+    showToast('Could not upload Services Showcase media. Run supabase/services-showcase-cms.sql and try again.', 'error');
+    return null;
+  }
+
+  var publicUrlResult = supabase.storage
+    .from('cms-media')
+    .getPublicUrl(path);
+
+  var publicUrl = publicUrlResult &&
+    publicUrlResult.data &&
+    publicUrlResult.data.publicUrl;
+
+  if (!publicUrl) {
+    showToast('Services Showcase media uploaded, but the public URL could not be created.', 'error');
+    return null;
+  }
+
+  showToast('Services Showcase media uploaded successfully.', 'success');
+  return publicUrl;
+}
+
 async function logCmsActivity(actionType, description, propertyId) {
   var supabase = getSupabaseClient();
   if (!supabase || !getCurrentStaffId()) return;
@@ -874,6 +1201,32 @@ function getFeaturedPayload() {
     display_order: Number(fieldValue('mf_displayOrder') || getNextDisplayOrder(featuredProperties)),
     is_visible: fieldValue('mf_status') === 'Featured',
     updated_by: getCurrentStaffId(),
+    updated_at: new Date().toISOString()
+  };
+}
+
+function getServiceShowcasePayload() {
+  var highlightLines = fieldValue('mf_highlights')
+    .split('\n')
+    .map(function(line) { return line.trim(); })
+    .filter(Boolean);
+
+  return {
+    title: fieldValue('mf_title'),
+    badge: cleanValue(fieldValue('mf_badge')),
+    description: fieldValue('mf_description'),
+    highlights: highlightLines,
+    icon_key: cleanValue(fieldValue('mf_iconKey')),
+    image_url: cleanValue(fieldValue('mf_imageUrl')),
+    image_alt: cleanValue(fieldValue('mf_imageAlt')),
+    visual_theme: cleanValue(fieldValue('mf_visualTheme')),
+    display_order: Number(fieldValue('mf_displayOrder') || getNextDisplayOrder(serviceShowcaseItems)),
+    is_active: fieldValue('mf_status') === 'Active',
+    is_case_study: Boolean(document.getElementById('mf_isCaseStudy') && document.getElementById('mf_isCaseStudy').checked),
+    case_study_label: cleanValue(fieldValue('mf_caseStudyLabel')) || 'View Case Study',
+    case_study_url: cleanValue(fieldValue('mf_caseStudyUrl')),
+    hover_video_url: cleanValue(fieldValue('mf_hoverVideoUrl')),
+    hover_video_poster_url: cleanValue(fieldValue('mf_hoverVideoPosterUrl')),
     updated_at: new Date().toISOString()
   };
 }
@@ -973,6 +1326,22 @@ async function loadFeaturedProperties(supabase) {
   return response.data || [];
 }
 
+async function loadServiceShowcaseItems(supabase) {
+  var response = await supabase
+    .from('cms_service_showcase_items')
+    .select('id, display_order, is_active, title, badge, description, highlights, icon_key, image_url, image_alt, visual_theme, is_case_study, case_study_label, case_study_url, hover_video_url, hover_video_poster_url, created_at, updated_at')
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (response.error) {
+    if (isMissingCmsTableError(response.error)) {
+      console.warn('Services Showcase CMS table is not available yet. Run supabase/services-showcase-cms.sql.', response.error);
+      return [];
+    }
+    throw response.error;
+  }
+  return response.data || [];
+}
+
 async function loadCmsProperties(supabase) {
   var response = await supabase
     .from('properties')
@@ -1013,6 +1382,7 @@ async function loadCMSData() {
     var teamResult = await loadTeamProfiles(supabase);
     var testimonialResult = await loadTestimonials(supabase);
     var featuredResult = await loadFeaturedProperties(supabase);
+    var serviceShowcaseResult = await loadServiceShowcaseItems(supabase);
 
     cmsStaffUsers = staffResult;
     cmsProperties = propertiesResult;
@@ -1030,6 +1400,7 @@ async function loadCMSData() {
     featuredProperties = featuredResult
       .map(function(row) { return mapFeaturedProperty(row, propertyLookup); })
       .filter(Boolean);
+    serviceShowcaseItems = serviceShowcaseResult.map(mapServiceShowcaseItem);
 
     cmsUsingSupabase = true;
     cmsTablesAvailable = true;
@@ -1110,6 +1481,7 @@ function renderSection(section) {
   if (section === 'team')         renderTeam();
   if (section === 'testimonials') renderTestimonials();
   if (section === 'featured')     renderFeatured();
+  if (section === 'services-showcase') renderServiceShowcase();
   if (section === 'news')         renderArticles();
   updateCmsStats();
 }
@@ -1946,7 +2318,605 @@ async function saveFeaturedFromModal() {
 
 
 /* ══════════════════════════════════════════════════════════════
-   12. NEWS / ARTICLES
+   12. SERVICES SHOWCASE
+══════════════════════════════════════════════════════════════ */
+
+function renderServiceShowcase() {
+  var grid = document.getElementById('serviceShowcaseGrid');
+  var empty = document.getElementById('serviceShowcaseEmpty');
+  if (!grid) return;
+  if (empty) empty.style.display = 'none';
+
+  var missingLayouts = SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.filter(function(layout) {
+    return !getServiceShowcaseItemByLayoutKey(layout.key);
+  });
+  var customItems = serviceShowcaseItems.filter(function(item) {
+    return !serviceShowcaseLayoutKey(item);
+  });
+  var defaultButton = document.getElementById('btnAddServiceShowcase');
+  if (defaultButton) {
+    defaultButton.style.display = missingLayouts.length && canManageCms() ? 'inline-flex' : 'none';
+  }
+
+  grid.innerHTML = [
+    renderServiceDefaultsNotice(missingLayouts),
+    '<div class="service-fixed-panel-grid">',
+    SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.map(renderFixedServiceShowcasePanel).join(''),
+    '</div>',
+    renderServiceShowcaseLegacyRows(customItems)
+  ].filter(Boolean).join('');
+}
+
+var btnAddServiceShowcase = document.getElementById('btnAddServiceShowcase');
+if (btnAddServiceShowcase) {
+  btnAddServiceShowcase.addEventListener('click', function() {
+    createDefaultServiceShowcaseItems();
+  });
+}
+
+document.addEventListener('click', function(event) {
+  if (event.target.closest('#btnCreateDefaultServices')) {
+    createDefaultServiceShowcaseItems();
+  }
+});
+
+function renderServiceDefaultsNotice(missingLayouts) {
+  if (!missingLayouts.length) {
+    return [
+      '<div class="service-sync-note is-complete">',
+      '<strong>All five fixed Services cards are connected.</strong>',
+      '<span>Edits below update the exact public homepage card placements.</span>',
+      '</div>'
+    ].join('');
+  }
+
+  return [
+    '<div class="service-sync-note">',
+    '<div>',
+    '<strong>' + missingLayouts.length + ' fixed Services card' + (missingLayouts.length === 1 ? '' : 's') + ' not found in Supabase.</strong>',
+    '<span>Missing: ' + escapeCmsHtml(missingLayouts.map(function(layout) { return layout.title; }).join(', ')) + '.</span>',
+    '</div>',
+    cmsActionHtml('<button type="button" class="action-btn primary small" onclick="createDefaultServiceShowcaseItems()">Create Missing Default Service Cards</button>'),
+    '</div>'
+  ].join('');
+}
+
+function renderFixedServiceShowcasePanel(layout) {
+  var item = getServiceShowcasePanelItem(layout);
+  var existing = Boolean(getServiceShowcaseItemByLayoutKey(layout.key));
+  var isMarketing = layout.key === 'marketing';
+  var domKey = servicePanelDomKey(layout.key);
+  var disabled = canManageCms() ? '' : ' disabled';
+  var previewImage = getServiceShowcasePreviewImage(item);
+  var highlights = item.highlights || [];
+  var statusText = item.active ? 'Active' : 'Inactive';
+  var warning = isMarketing && !item.hoverVideoUrl
+    ? '<div class="service-video-warning">No video uploaded. The website will show this as a static image card and the scroll-scrub effect will not activate.</div>'
+    : '';
+  var preview = previewImage
+    ? '<img src="' + escapeAttribute(previewImage) + '" alt="' + escapeAttribute(item.imageAlt || item.title) + '" />'
+    : '<span>' + escapeCmsHtml(layout.iconKey) + '</span>';
+
+  return [
+    '<article class="service-fixed-panel service-fixed-panel--' + escapeAttribute(domKey) + (isMarketing ? ' is-marketing' : '') + (existing ? '' : ' is-missing-row') + '">',
+    '<div class="service-fixed-panel-head">',
+    '<div>',
+    '<span class="service-layout-label">' + escapeCmsHtml(layout.label) + '</span>',
+    '<h3>' + escapeCmsHtml(layout.title) + '</h3>',
+    '<p>' + (existing ? 'Connected to cms_service_showcase_items.' : 'Default row not created yet. Save or create defaults to connect it.') + '</p>',
+    '</div>',
+    '<div class="service-panel-state">',
+    '<span class="badge ' + getBadgeClass(statusText === 'Active' ? 'Active' : 'Hidden') + '">' + escapeCmsHtml(statusText) + '</span>',
+    cmsActionHtml('<button type="button" class="action-btn outline small" onclick="focusServiceShowcasePanel(\'' + escapeAttribute(layout.key) + '\')">Edit fields</button>'),
+    '<span class="service-save-status" id="' + servicePanelFieldId(layout.key, 'saveStatus') + '">' + (existing ? 'Saved row loaded' : 'Default row missing') + '</span>',
+    '</div>',
+    '</div>',
+    '<div class="service-fixed-panel-body">',
+    '<div class="service-fixed-preview">',
+    '<div class="service-website-preview' + (previewImage ? ' has-image' : '') + '">',
+    preview,
+    '<div class="service-website-preview-grade"></div>',
+    isMarketing ? '<span class="service-preview-pill">' + escapeCmsHtml(item.caseStudyLabel || 'View Case Study') + '</span>' : '',
+    '<div class="service-preview-copy">',
+    item.badge ? '<span>' + escapeCmsHtml(item.badge) + '</span>' : '',
+    '<strong>' + escapeCmsHtml(item.title) + '</strong>',
+    '<p>' + escapeCmsHtml(item.description || '') + '</p>',
+    '<div class="service-preview-chips">' + highlights.slice(0, 2).map(function(highlight) {
+      return '<span class="service-preview-chip">' + escapeCmsHtml(highlight) + '</span>';
+    }).join('') + '</div>',
+    '</div>',
+    '</div>',
+    '<div class="service-fixed-meta">',
+    '<span>icon_key: ' + escapeCmsHtml(layout.iconKey) + '</span>',
+    '<span>visual_theme: ' + escapeCmsHtml(layout.visualTheme) + '</span>',
+    '<span>display_order: ' + Number(layout.order) + '</span>',
+    isMarketing ? '<span>is_case_study: true</span>' : '',
+    '</div>',
+    '</div>',
+    '<div class="service-fixed-fields">',
+    '<div class="service-field-grid">',
+    renderServiceTextField(layout.key, 'badge', 'Badge / label', item.badge, 'text', disabled),
+    renderServiceTextField(layout.key, 'title', 'Title', item.title, 'text', disabled),
+    '</div>',
+    renderServiceTextareaField(layout.key, 'description', 'Short description', item.description, disabled),
+    '<div class="service-field-grid">',
+    renderServiceTextField(layout.key, 'chip1', 'Highlight chip 1', highlights[0] || '', 'text', disabled),
+    renderServiceTextField(layout.key, 'chip2', 'Highlight chip 2', highlights[1] || '', 'text', disabled),
+    '</div>',
+    '<label class="service-active-toggle"><input type="checkbox" id="' + servicePanelFieldId(layout.key, 'active') + '"' + (item.active ? ' checked' : '') + disabled + ' /> Active on website</label>',
+    '<div class="service-panel-section-label">Image</div>',
+    renderServiceMediaField(layout.key, {
+      label: 'Image URL',
+      urlField: 'imageUrl',
+      fileField: 'imageFile',
+      value: item.imageUrl,
+      accept: 'image/jpeg,image/png,image/webp',
+      uploadText: 'Upload image'
+    }),
+    renderServiceTextField(layout.key, 'imageAlt', 'Image alt text', item.imageAlt || item.title, 'text', disabled),
+    isMarketing ? renderMarketingServiceFields(layout, item) : '',
+    warning,
+    cmsActionHtml('<button type="button" class="action-btn primary service-save-btn" onclick="saveFixedServiceShowcaseCard(\'' + escapeAttribute(layout.key) + '\')">Save ' + escapeCmsHtml(layout.title) + '</button>'),
+    '</div>',
+    '</div>',
+    '</article>'
+  ].join('');
+}
+
+function focusServiceShowcasePanel(layoutKey) {
+  var firstField = document.getElementById(servicePanelFieldId(layoutKey, 'badge')) ||
+    document.getElementById(servicePanelFieldId(layoutKey, 'title'));
+  if (firstField) {
+    firstField.focus();
+    firstField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function setServiceShowcaseSaveStatus(layoutKey, message, type) {
+  var status = document.getElementById(servicePanelFieldId(layoutKey, 'saveStatus'));
+  if (!status) return;
+  status.textContent = message || '';
+  status.className = 'service-save-status' + (type ? ' ' + type : '');
+}
+
+function renderMarketingServiceFields(layout, item) {
+  var disabled = canManageCms() ? '' : ' disabled';
+  return [
+    '<div class="service-panel-section-label">Case Study</div>',
+    '<div class="service-field-grid">',
+    renderServiceTextField(layout.key, 'caseStudyLabel', 'Case study label', item.caseStudyLabel || 'View Case Study', 'text', disabled),
+    renderServiceTextField(layout.key, 'caseStudyUrl', 'Case study URL', item.caseStudyUrl || '', 'url', disabled),
+    '</div>',
+    '<div class="service-panel-section-label">Scroll Video</div>',
+    renderServiceMediaField(layout.key, {
+      label: 'Video URL',
+      urlField: 'hoverVideoUrl',
+      fileField: 'hoverVideoFile',
+      value: item.hoverVideoUrl,
+      accept: 'video/mp4,video/webm',
+      uploadText: 'Upload video'
+    }),
+    renderServiceMediaField(layout.key, {
+      label: 'Poster / fallback image URL',
+      urlField: 'hoverVideoPosterUrl',
+      fileField: 'hoverVideoPosterFile',
+      value: item.hoverVideoPosterUrl,
+      accept: 'image/jpeg,image/png,image/webp',
+      uploadText: 'Upload poster image'
+    })
+  ].join('');
+}
+
+function renderServiceTextField(layoutKey, fieldName, label, value, type, disabled) {
+  var id = servicePanelFieldId(layoutKey, fieldName);
+  return [
+    '<div class="service-panel-field">',
+    '<label for="' + id + '">' + escapeCmsHtml(label) + '</label>',
+    '<input type="' + escapeAttribute(type || 'text') + '" id="' + id + '" value="' + escapeAttribute(value || '') + '"' + (disabled || '') + ' />',
+    '</div>'
+  ].join('');
+}
+
+function renderServiceTextareaField(layoutKey, fieldName, label, value, disabled) {
+  var id = servicePanelFieldId(layoutKey, fieldName);
+  return [
+    '<div class="service-panel-field">',
+    '<label for="' + id + '">' + escapeCmsHtml(label) + '</label>',
+    '<textarea id="' + id + '" rows="3"' + (disabled || '') + '>' + escapeCmsHtml(value || '') + '</textarea>',
+    '</div>'
+  ].join('');
+}
+
+function renderServiceMediaField(layoutKey, options) {
+  var urlId = servicePanelFieldId(layoutKey, options.urlField);
+  var fileId = servicePanelFieldId(layoutKey, options.fileField);
+  var disabled = canManageCms() ? '' : ' disabled';
+  return [
+    '<div class="service-panel-field service-panel-media-field">',
+    '<label for="' + urlId + '">' + escapeCmsHtml(options.label) + '</label>',
+    '<div class="service-url-row">',
+    '<input type="url" id="' + urlId + '" value="' + escapeAttribute(options.value || '') + '" placeholder="Paste public media URL"' + disabled + ' />',
+    '</div>',
+    cmsActionHtml('<label class="service-file-picker" for="' + fileId + '"><input type="file" id="' + fileId + '" accept="' + escapeAttribute(options.accept) + '" /><span>' + escapeCmsHtml(options.uploadText) + '</span></label>'),
+    '</div>'
+  ].join('');
+}
+
+function renderServiceShowcaseLegacyRows(items) {
+  if (!items.length) return '';
+  return [
+    '<section class="service-legacy-panel">',
+    '<h3>Legacy / Custom Service Rows</h3>',
+    '<p>These rows do not match the fixed public Services layout. They are preserved here so existing data is not hidden.</p>',
+    '<div class="service-legacy-list">',
+    items.map(function(item) {
+      return [
+        '<div class="service-legacy-row">',
+        '<div><strong>' + escapeCmsHtml(item.title || 'Untitled service') + '</strong><span>' + escapeCmsHtml(item.iconKey || item.visualTheme || 'No fixed identity') + '</span></div>',
+        cmsActionHtml('<button type="button" class="action-btn small ' + (item.active ? 'danger' : 'secondary') + '" onclick="toggleServiceShowcaseStatus(' + quoteId(item.id) + ')">' + (item.active ? 'Hide' : 'Show') + '</button>'),
+        '</div>'
+      ].join('');
+    }).join(''),
+    '</div>',
+    '</section>'
+  ].join('');
+}
+
+function servicePanelValue(layoutKey, fieldName) {
+  return fieldValue(servicePanelFieldId(layoutKey, fieldName));
+}
+
+function servicePanelChecked(layoutKey, fieldName) {
+  var el = document.getElementById(servicePanelFieldId(layoutKey, fieldName));
+  return Boolean(el && el.checked);
+}
+
+function servicePanelFile(layoutKey, fieldName) {
+  return selectedFile(servicePanelFieldId(layoutKey, fieldName));
+}
+
+function getFixedServiceShowcasePayload(layout) {
+  var highlights = [
+    servicePanelValue(layout.key, 'chip1'),
+    servicePanelValue(layout.key, 'chip2')
+  ].map(function(value) { return value.trim(); }).filter(Boolean);
+  var isMarketing = layout.key === 'marketing';
+
+  return {
+    display_order: layout.order,
+    is_active: servicePanelChecked(layout.key, 'active'),
+    title: servicePanelValue(layout.key, 'title'),
+    badge: cleanValue(servicePanelValue(layout.key, 'badge')),
+    description: servicePanelValue(layout.key, 'description'),
+    highlights: highlights,
+    icon_key: layout.iconKey,
+    image_url: cleanValue(servicePanelValue(layout.key, 'imageUrl')),
+    image_alt: cleanValue(servicePanelValue(layout.key, 'imageAlt')) || layout.title,
+    visual_theme: layout.visualTheme,
+    is_case_study: Boolean(layout.isCaseStudy),
+    case_study_label: isMarketing
+      ? (cleanValue(servicePanelValue(layout.key, 'caseStudyLabel')) || 'View Case Study')
+      : null,
+    case_study_url: isMarketing ? cleanValue(servicePanelValue(layout.key, 'caseStudyUrl')) : null,
+    hover_video_url: isMarketing ? cleanValue(servicePanelValue(layout.key, 'hoverVideoUrl')) : null,
+    hover_video_poster_url: isMarketing ? cleanValue(servicePanelValue(layout.key, 'hoverVideoPosterUrl')) : null,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function saveFixedServiceShowcaseCard(layoutKey) {
+  if (!ensureCmsReadyForWrite()) return;
+
+  var layout = getServiceShowcaseLayoutByKey(layoutKey);
+  if (!layout) {
+    showToast('Unknown Services card.', 'error');
+    return;
+  }
+
+  var payload = getFixedServiceShowcasePayload(layout);
+  var imageFile = servicePanelFile(layout.key, 'imageFile');
+  var videoFile = layout.key === 'marketing' ? servicePanelFile(layout.key, 'hoverVideoFile') : null;
+  var posterFile = layout.key === 'marketing' ? servicePanelFile(layout.key, 'hoverVideoPosterFile') : null;
+
+  if (!payload.title) {
+    showToast('Please enter a service title.', 'error');
+    return;
+  }
+  if (!payload.description) {
+    showToast('Please enter a short service description.', 'error');
+    return;
+  }
+
+  var imageError = imageFile ? validateCmsImageFile(imageFile) : null;
+  var videoError = videoFile ? validateServiceShowcaseVideoFile(videoFile) : null;
+  var posterError = posterFile ? validateCmsImageFile(posterFile) : null;
+  if (imageError || videoError || posterError) {
+    showToast(imageError || videoError || posterError, 'error');
+    return;
+  }
+
+  try {
+    setServiceShowcaseSaveStatus(layout.key, 'Saving...', '');
+    var supabase = getSupabaseClient();
+    var existing = getServiceShowcaseItemByLayoutKey(layout.key);
+    var result = existing
+      ? await supabase.from('cms_service_showcase_items').update(payload).eq('id', existing.id).select('id').single()
+      : await supabase.from('cms_service_showcase_items').insert(payload).select('id').single();
+
+    if (result.error) throw result.error;
+    var itemId = result.data && result.data.id ? result.data.id : existing.id;
+    var mediaUpdates = {};
+
+    if (imageFile) {
+      var imageUrl = await uploadServiceShowcaseMedia('image', imageFile, layout.key);
+      if (imageUrl) mediaUpdates.image_url = imageUrl;
+    }
+    if (videoFile) {
+      var videoUrl = await uploadServiceShowcaseMedia('video', videoFile, layout.key);
+      if (videoUrl) mediaUpdates.hover_video_url = videoUrl;
+    }
+    if (posterFile) {
+      var posterUrl = await uploadServiceShowcaseMedia('poster', posterFile, layout.key);
+      if (posterUrl) mediaUpdates.hover_video_poster_url = posterUrl;
+    }
+
+    if (Object.keys(mediaUpdates).length) {
+      mediaUpdates.updated_at = new Date().toISOString();
+      var mediaUpdate = await supabase
+        .from('cms_service_showcase_items')
+        .update(mediaUpdates)
+        .eq('id', itemId);
+      if (mediaUpdate.error) throw mediaUpdate.error;
+      await logCmsActivity('CMS_SERVICE_SHOWCASE_MEDIA_UPLOADED', layout.title + ' media was uploaded.');
+    }
+
+    await logCmsActivity(
+      existing ? 'CMS_SERVICE_SHOWCASE_UPDATED' : 'CMS_SERVICE_SHOWCASE_CREATED',
+      layout.title + ' Services Showcase card was saved.'
+    );
+    setServiceShowcaseSaveStatus(layout.key, 'Saved', 'success');
+    await reloadCmsAfterWrite(layout.title + ' Services card saved.');
+  } catch (error) {
+    console.warn('Fixed Services Showcase save failed.', error);
+    setServiceShowcaseSaveStatus(layout.key, 'Save failed', 'error');
+    showToast('Could not save ' + layout.title + '. Run supabase/services-showcase-cms.sql if needed.', 'error');
+  }
+}
+
+function renderServiceShowcaseLane(title, subtitle, items, layoutKeys) {
+  var laneItems = layoutKeys.map(function(key) {
+    return items.find(function(item) {
+      return serviceShowcaseLayoutKey(item) === key;
+    });
+  }).filter(Boolean);
+
+  if (!laneItems.length) return '';
+
+  return [
+    '<section class="service-layout-lane service-layout-lane--' + escapeAttribute(layoutKeys.join('-')) + '">',
+    '<div class="service-layout-lane-header">',
+    '<span>' + escapeCmsHtml(title) + '</span>',
+    '<small>' + escapeCmsHtml(subtitle) + '</small>',
+    '</div>',
+    '<div class="service-layout-lane-grid">',
+    laneItems.map(renderServiceShowcaseDashboardCard).join(''),
+    '</div>',
+    '</section>'
+  ].join('');
+}
+
+function renderServiceShowcaseCustomLane(items) {
+  var customItems = items.filter(function(item) {
+    return !serviceShowcaseLayoutKey(item);
+  });
+  if (!customItems.length) return '';
+  return [
+    '<section class="service-layout-lane service-layout-lane--custom">',
+    '<div class="service-layout-lane-header">',
+    '<span>Custom services</span>',
+    '<small>Additional website service cards</small>',
+    '</div>',
+    '<div class="service-layout-lane-grid">',
+    customItems.map(renderServiceShowcaseDashboardCard).join(''),
+    '</div>',
+    '</section>'
+  ].join('');
+}
+
+function renderServiceShowcaseDashboardCard(item) {
+  var bc = getBadgeClass(item.status);
+  var layout = getServiceShowcaseLayoutMeta(item);
+  var isMarketing = layout.key === 'marketing';
+  var previewImage = getServiceShowcasePreviewImage(item);
+  var highlights = (item.highlights || []).slice(0, 3).map(function(highlight) {
+    return '<span class="service-preview-chip">' + escapeCmsHtml(highlight) + '</span>';
+  }).join('');
+  var mediaPreview = previewImage
+    ? '<img src="' + escapeAttribute(previewImage) + '" alt="' + escapeAttribute(item.imageAlt || item.title) + '" />'
+    : '<span>' + escapeCmsHtml(item.iconKey || item.visualTheme || 'service') + '</span>';
+  var videoStatus = item.hoverVideoUrl
+    ? '<span class="service-video-state is-ready">Scroll video uploaded</span>'
+    : '<span class="service-video-state is-missing">No video uploaded. Website will show a static card.</span>';
+  var posterStatus = item.hoverVideoPosterUrl ? 'Poster ready' : 'No poster';
+
+  return [
+    '<article class="service-dashboard-card' + (isMarketing ? ' is-featured-video' : '') + '">',
+    '<div class="service-dashboard-card-top">',
+    '<span class="service-layout-label">' + escapeCmsHtml(layout.label) + '</span>',
+    '<span class="badge ' + bc + '">' + escapeCmsHtml(item.status) + '</span>',
+    '</div>',
+    '<div class="service-website-preview' + (previewImage ? ' has-image' : '') + '">',
+    mediaPreview,
+    '<div class="service-website-preview-grade"></div>',
+    item.isCaseStudy ? '<span class="service-preview-pill">' + escapeCmsHtml(item.caseStudyLabel || 'View Case Study') + '</span>' : '',
+    '<div class="service-preview-copy">',
+    item.badge ? '<span>' + escapeCmsHtml(item.badge) + '</span>' : '',
+    '<strong>' + escapeCmsHtml(item.title) + '</strong>',
+    '<p>' + escapeCmsHtml(item.description || 'Use one short sentence.') + '</p>',
+    highlights ? '<div class="service-preview-chips">' + highlights + '</div>' : '',
+    '</div>',
+    '</div>',
+    '<div class="service-dashboard-card-body">',
+    '<h3>' + escapeCmsHtml(item.title) + '</h3>',
+    '<div class="service-card-facts">',
+    '<span>Order ' + Number(item.order || 0) + '</span>',
+    '<span>Icon ' + escapeCmsHtml(item.iconKey || '-') + '</span>',
+    '<span>Theme ' + escapeCmsHtml(item.visualTheme || '-') + '</span>',
+    '</div>',
+    isMarketing ? [
+      '<div class="service-featured-note">',
+      '<strong>Featured Case Study Video Card</strong>',
+      '<p>Controls the large middle website card, View Case Study overlay, poster/fallback image, and optional pinned scroll-scrub video.</p>',
+      '</div>',
+      '<div class="service-media-status">',
+      videoStatus,
+      '<span>' + escapeCmsHtml(posterStatus) + '</span>',
+      '<span>CTA: ' + escapeCmsHtml(item.caseStudyLabel || 'View Case Study') + '</span>',
+      '<span>URL: ' + escapeCmsHtml(item.caseStudyUrl || 'Not set') + '</span>',
+      '</div>'
+    ].join('') : '',
+    '</div>',
+    cmsActionHtml([
+      '<div class="banner-actions service-dashboard-actions">',
+      '<button class="action-btn outline small" onclick="openCmsModal(\'service\',\'edit\',' + quoteId(item.id) + ')">Edit</button>',
+      '<button class="action-btn small ' + (item.active ? 'danger' : 'secondary') + '" onclick="toggleServiceShowcaseStatus(' + quoteId(item.id) + ')">',
+      (item.active ? 'Hide' : 'Show'),
+      '</button>',
+      '<button class="action-btn danger small" onclick="deleteCmsRecord(\'service\',' + quoteId(item.id) + ')">Deactivate</button>',
+      '</div>'
+    ].join('')),
+    '</article>'
+  ].join('');
+}
+
+function toggleServiceShowcaseStatus(id) {
+  var item = serviceShowcaseItems.find(function(row) { return row.id === id; });
+  if (!item) return;
+  updateServiceShowcaseVisibility(id, !item.active);
+}
+
+async function createDefaultServiceShowcaseItems() {
+  if (!ensureCmsReadyForWrite()) return;
+
+  var missingLayouts = SERVICE_SHOWCASE_LAYOUT_BLUEPRINT.filter(function(layout) {
+    return !getServiceShowcaseItemByLayoutKey(layout.key);
+  });
+
+  if (!missingLayouts.length) {
+    showToast('All five default Services cards already exist.', 'success');
+    return;
+  }
+
+  try {
+    var payload = missingLayouts.map(getServiceShowcasePayloadFromBlueprint);
+    var result = await getSupabaseClient()
+      .from('cms_service_showcase_items')
+      .insert(payload)
+      .select('id');
+    if (result.error) throw result.error;
+    await logCmsActivity('CMS_SERVICE_SHOWCASE_DEFAULTS_CREATED', 'Default Services Showcase rows were created.');
+    await reloadCmsAfterWrite('Default Services Showcase cards created.');
+  } catch (error) {
+    console.warn('Default Services Showcase creation failed.', error);
+    showToast('Could not create default Services Showcase. Run supabase/services-showcase-cms.sql if needed.', 'error');
+  }
+}
+
+async function updateServiceShowcaseVisibility(id, isActive) {
+  if (!ensureCmsReadyForWrite()) return;
+
+  try {
+    var result = await getSupabaseClient()
+      .from('cms_service_showcase_items')
+      .update({
+        is_active: isActive,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (result.error) throw result.error;
+    await logCmsActivity(
+      isActive ? 'CMS_SERVICE_SHOWCASE_UPDATED' : 'CMS_SERVICE_SHOWCASE_HIDDEN',
+      isActive ? 'Services Showcase item was shown.' : 'Services Showcase item was hidden.'
+    );
+    await reloadCmsAfterWrite(isActive ? 'Services Showcase item shown.' : 'Services Showcase item hidden.');
+  } catch (error) {
+    console.warn('Services Showcase visibility update failed.', error);
+    showToast('Could not update Services Showcase item. Run supabase/services-showcase-cms.sql if needed.', 'error');
+  }
+}
+
+async function saveServiceShowcaseFromModal() {
+  if (!ensureCmsReadyForWrite()) return;
+
+  var payload = getServiceShowcasePayload();
+  var imageFile = selectedFile('mf_imageFile');
+  var videoFile = selectedFile('mf_hoverVideoFile');
+  var posterFile = selectedFile('mf_hoverVideoPosterFile');
+
+  if (!payload.title) {
+    showToast('Please enter a service title.', 'error');
+    return;
+  }
+  if (!payload.description) {
+    showToast('Please enter a service description.', 'error');
+    return;
+  }
+
+  var imageError = imageFile ? validateCmsImageFile(imageFile) : null;
+  var videoError = videoFile ? validateServiceShowcaseVideoFile(videoFile) : null;
+  var posterError = posterFile ? validateCmsImageFile(posterFile) : null;
+  if (imageError || videoError || posterError) {
+    showToast(imageError || videoError || posterError, 'error');
+    return;
+  }
+
+  try {
+    var supabase = getSupabaseClient();
+    var actionType = modalMode === 'edit' ? 'CMS_SERVICE_SHOWCASE_UPDATED' : 'CMS_SERVICE_SHOWCASE_CREATED';
+    var result = modalMode === 'edit'
+      ? await supabase.from('cms_service_showcase_items').update(payload).eq('id', modalEditId).select('id').single()
+      : await supabase.from('cms_service_showcase_items').insert(payload).select('id').single();
+
+    if (result.error) throw result.error;
+    var itemId = result.data && result.data.id ? result.data.id : modalEditId;
+
+    var mediaUpdates = {};
+    if (imageFile) {
+      var imageUrl = await uploadServiceShowcaseMedia('image', imageFile);
+      if (imageUrl) mediaUpdates.image_url = imageUrl;
+    }
+    if (videoFile) {
+      var videoUrl = await uploadServiceShowcaseMedia('video', videoFile);
+      if (videoUrl) mediaUpdates.hover_video_url = videoUrl;
+    }
+    if (posterFile) {
+      var posterUrl = await uploadServiceShowcaseMedia('poster', posterFile);
+      if (posterUrl) mediaUpdates.hover_video_poster_url = posterUrl;
+    }
+
+    if (Object.keys(mediaUpdates).length) {
+      mediaUpdates.updated_at = new Date().toISOString();
+      var mediaUpdate = await supabase
+        .from('cms_service_showcase_items')
+        .update(mediaUpdates)
+        .eq('id', itemId);
+      if (mediaUpdate.error) throw mediaUpdate.error;
+      await logCmsActivity('CMS_SERVICE_SHOWCASE_MEDIA_UPLOADED', 'Services Showcase media was uploaded.');
+    }
+
+    await logCmsActivity(actionType, modalMode === 'edit' ? 'Services Showcase item was updated.' : 'Services Showcase item was created.');
+    closeCmsModal();
+    await reloadCmsAfterWrite(modalMode === 'edit' ? 'Services Showcase item updated.' : 'Services Showcase item created.');
+  } catch (error) {
+    console.warn('Services Showcase save failed.', error);
+    showToast('Could not save Services Showcase item. Run supabase/services-showcase-cms.sql if needed.', 'error');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   13. NEWS / ARTICLES
 ══════════════════════════════════════════════════════════════ */
 
 function renderArticles() {
@@ -2035,6 +3005,10 @@ function deleteCmsRecord(type, id) {
     updateFeaturedVisibility(id, false, p ? p.propertyId : null);
     return;
   }
+  if (type === 'service') {
+    updateServiceShowcaseVisibility(id, false);
+    return;
+  }
   phase6BToast('CMS article');
 }
 
@@ -2055,6 +3029,7 @@ function openCmsModal(type, mode, id) {
     team:        { add: 'Add Team Profile',      edit: 'Edit Team Profile' },
     testimonial: { add: 'Add Testimonial',       edit: 'Edit Testimonial' },
     featured:    { add: 'Add Featured Property', edit: 'Edit Featured Property' },
+    service:     { add: 'Add Service Showcase Item', edit: 'Edit Service Showcase Item' },
     article:     { add: 'Add Article',           edit: 'Edit Article' }
   };
 
@@ -2087,6 +3062,7 @@ function buildModalForm(type, mode, id) {
     if (type === 'team')         record = teamProfiles.find(function(x){ return x.id === id; });
     if (type === 'testimonial')  record = testimonials.find(function(x){ return x.id === id; });
     if (type === 'featured')     record = featuredProperties.find(function(x){ return x.id === id; });
+    if (type === 'service')      record = serviceShowcaseItems.find(function(x){ return x.id === id; });
     if (type === 'article')      record = articles.find(function(x){ return x.id === id; });
   }
 
@@ -2099,6 +3075,8 @@ function buildModalForm(type, mode, id) {
     '<option value="Lusaka"'        + (v('branch') === 'Lusaka'        ? ' selected' : '') + '>Lusaka</option>',
     '<option value="Livingstone"'   + (v('branch') === 'Livingstone'   ? ' selected' : '') + '>Livingstone</option>'
   ].join('');
+  var ev = function(field, def) { return escapeAttribute(v(field, def)); };
+  var tv = function(field, def) { return escapeCmsHtml(v(field, def)); };
 
   // ── BANNER FORM ──────────────────────────────────────────────
   if (type === 'banner') {
@@ -2232,6 +3210,119 @@ function buildModalForm(type, mode, id) {
     ].join('');
   }
 
+  // ── SERVICES SHOWCASE FORM ───────────────────────────────────
+  if (type === 'service') {
+    var iconOptions = SERVICE_SHOWCASE_ICON_KEYS.map(function(key) {
+      return '<option value="' + key + '"' + (v('iconKey') === key ? ' selected' : '') + '>' + key + '</option>';
+    }).join('');
+    var themeOptions = SERVICE_SHOWCASE_THEMES.map(function(key) {
+      return '<option value="' + key + '"' + (v('visualTheme') === key ? ' selected' : '') + '>' + key + '</option>';
+    }).join('');
+    var highlightsText = Array.isArray(v('highlights')) ? v('highlights').join('\n') : v('highlights');
+    var serviceLayout = getServiceShowcaseLayoutMeta(record || {});
+    var isMarketingService = serviceLayout.key === 'marketing' || String(v('title') || '').toLowerCase().indexOf('marketing') !== -1;
+    var previewImage = v('hoverVideoPosterUrl') || v('imageUrl') || '';
+    var previewChips = (Array.isArray(v('highlights')) ? v('highlights') : String(highlightsText || '').split('\n')).filter(Boolean).slice(0, 3).map(function(highlight) {
+      return '<span class="service-preview-chip">' + escapeCmsHtml(highlight) + '</span>';
+    }).join('');
+    return [
+      '<div class="service-modal-intro' + (isMarketingService ? ' is-marketing' : '') + '">',
+      '<div>',
+      '<span>' + escapeCmsHtml(serviceLayout.label || 'Website Service Card') + '</span>',
+      '<strong>' + (isMarketingService ? 'Featured Case Study Video Card' : 'Website Services Card') + '</strong>',
+      '<p>' + (isMarketingService
+        ? 'The Property Marketing video should be short, dark/cinematic, and optimized for scroll scrubbing.'
+        : 'Use short website copy that fits the public image-led Services card.') + '</p>',
+      '</div>',
+      '</div>',
+      '<div class="service-modal-preview">',
+      '<div class="service-website-preview' + (previewImage ? ' has-image' : '') + '">',
+      previewImage ? '<img src="' + escapeAttribute(previewImage) + '" alt="' + ev('imageAlt', v('title') || 'Service preview') + '" />' : '<span>' + escapeCmsHtml(v('iconKey') || v('visualTheme') || 'service') + '</span>',
+      '<div class="service-website-preview-grade"></div>',
+      v('isCaseStudy') ? '<span class="service-preview-pill">' + ev('caseStudyLabel', 'View Case Study') + '</span>' : '',
+      '<div class="service-preview-copy">',
+      v('badge') ? '<span>' + ev('badge') + '</span>' : '',
+      '<strong>' + ev('title', 'Service title') + '</strong>',
+      '<p>' + escapeCmsHtml(v('description') || 'Use one short sentence.') + '</p>',
+      previewChips ? '<div class="service-preview-chips">' + previewChips + '</div>' : '',
+      '</div>',
+      '</div>',
+      '</div>',
+      '<div class="form-section-label">A. Card Identity</div>',
+      '<div class="form-row">',
+        '<div class="form-group half"><label>Service Title</label>',
+          '<input type="text" id="mf_title" value="' + ev('title') + '" placeholder="Property Sales" /></div>',
+        '<div class="form-group half"><label>Badge / Label</label>',
+          '<input type="text" id="mf_badge" value="' + ev('badge') + '" placeholder="For Buyers & Sellers" /></div>',
+      '</div>',
+      '<div class="form-row">',
+        '<div class="form-group third"><label>Icon Key</label>',
+          '<select id="mf_iconKey">' + iconOptions + '</select></div>',
+        '<div class="form-group third"><label>Visual Theme</label>',
+          '<select id="mf_visualTheme">' + themeOptions + '</select></div>',
+        '<div class="form-group third"><label>Display Order</label>',
+          '<input type="number" id="mf_displayOrder" min="0" step="1" value="' + ev('order', getNextDisplayOrder(serviceShowcaseItems)) + '" /></div>',
+      '</div>',
+      '<div class="form-row">',
+        '<div class="form-group half"><label>Status</label>',
+          '<select id="mf_status">',
+            '<option value="Active"' + (v('active', true) ? ' selected' : '') + '>Active</option>',
+            '<option value="Hidden"' + (!v('active', true) ? ' selected' : '') + '>Hidden</option>',
+          '</select></div>',
+        '<div class="form-group half checkbox-form-group">',
+          '<label class="checkbox-label"><input type="checkbox" id="mf_isCaseStudy"' + (v('isCaseStudy') ? ' checked' : '') + ' /> Show as case study card</label>',
+        '</div>',
+      '</div>',
+      '<div class="form-section-label">B. Website Text</div>',
+      '<div class="form-group full"><label>Description</label>',
+        '<textarea id="mf_description" rows="2">' + tv('description') + '</textarea>',
+        '<p class="field-helper">Use one short sentence.</p></div>',
+      '<div class="form-group full"><label>Highlights, one per line</label>',
+        '<textarea id="mf_highlights" rows="3" placeholder="Market valuation&#10;Verified listings&#10;Investment support">' + escapeCmsHtml(highlightsText) + '</textarea>',
+        '<p class="field-helper">Highlights appear as small chips. Keep them short; two or three is ideal.</p></div>',
+      '<div class="form-section-label">C. Main Image</div>',
+      '<div class="form-row">',
+        '<div class="form-group half"><label>Image URL</label>',
+          '<input type="url" id="mf_imageUrl" value="' + ev('imageUrl') + '" placeholder="https://..." /></div>',
+        '<div class="form-group half"><label>Image Alt Text</label>',
+          '<input type="text" id="mf_imageAlt" value="' + ev('imageAlt') + '" /></div>',
+      '</div>',
+      '<label class="cms-img-upload" for="mf_imageFile">',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+        '<p>Choose a service image to upload</p>',
+        '<span>JPG, PNG, or WebP. Maximum 5MB.</span>',
+        '<input type="file" id="mf_imageFile" accept="image/jpeg,image/png,image/webp" />',
+      '</label>',
+      '<div class="form-section-label">D. Case Study Settings' + (isMarketingService ? ' — Property Marketing' : '') + '</div>',
+      isMarketingService && !v('hoverVideoUrl') ? '<div class="service-video-warning">No video uploaded. Website will show a static card.</div>' : '',
+      '<div class="form-row">',
+        '<div class="form-group half"><label>Case Study Label</label>',
+          '<input type="text" id="mf_caseStudyLabel" value="' + ev('caseStudyLabel', 'View Case Study') + '" /></div>',
+        '<div class="form-group half"><label>Case Study URL</label>',
+          '<input type="url" id="mf_caseStudyUrl" value="' + ev('caseStudyUrl') + '" placeholder="https://..." /></div>',
+      '</div>',
+      '<div class="form-group full"><label>Hover Video URL</label>',
+        '<input type="url" id="mf_hoverVideoUrl" value="' + ev('hoverVideoUrl') + '" placeholder="https://..." />',
+        '<p class="field-helper">For Property Marketing, this powers the pinned scroll-scrub video on desktop.</p></div>',
+      '<label class="cms-img-upload" for="mf_hoverVideoFile">',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>',
+        '<p>Choose a hover video to upload</p>',
+        '<span>MP4 or WebM. Maximum 30MB.</span>',
+        '<input type="file" id="mf_hoverVideoFile" accept="video/mp4,video/webm" />',
+      '</label>',
+      '<div class="form-group full"><label>Poster / Fallback Image URL</label>',
+        '<input type="url" id="mf_hoverVideoPosterUrl" value="' + ev('hoverVideoPosterUrl') + '" placeholder="https://..." />',
+        '<p class="field-helper">Shown as the fallback image and poster before video metadata is ready.</p></div>',
+      '<label class="cms-img-upload" for="mf_hoverVideoPosterFile">',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+        '<p>Choose a poster/fallback image</p>',
+        '<span>JPG, PNG, or WebP. Maximum 5MB.</span>',
+        '<input type="file" id="mf_hoverVideoPosterFile" accept="image/jpeg,image/png,image/webp" />',
+      '</label>',
+      '<p class="cms-img-note">Uploads save public URLs in the cms-media bucket. Local file paths are never saved.</p>'
+    ].join('');
+  }
+
   // ── ARTICLE FORM ──────────────────────────────────────────────
   if (type === 'article') {
     return [
@@ -2297,6 +3388,11 @@ function saveCmsModal() {
 
   if (type === 'featured') {
     saveFeaturedFromModal();
+    return;
+  }
+
+  if (type === 'service') {
+    saveServiceShowcaseFromModal();
     return;
   }
 
