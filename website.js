@@ -704,7 +704,7 @@ function propertyCard(property) {
   var detailsLabel = 'View details for ' + (property.title || property.reference_number || 'Hilltop property');
   var statusClass = propertyStatusClass(property.status);
   var location = property.area || getBranchName(property.branch_id) || 'Location available on request';
-  var imageMarkup = image ? '<img class="property-card-img" src="' + escapeHtml(image) + '" alt="" loading="lazy" />' : '';
+  var imageMarkup = image ? '<img class="property-card-img" src="' + escapeHtml(image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'" />' : '';
 
   var specHtmls = [];
   var isLand = String(property.property_type || '').toLowerCase() === 'land';

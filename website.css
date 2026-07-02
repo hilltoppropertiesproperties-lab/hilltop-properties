@@ -821,9 +821,12 @@ h2 {
 }
 
 .property-card-image-wrapper img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  z-index: 2;
   transition: transform 0.55s ease;
 }
 
