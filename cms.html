@@ -158,6 +158,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           Homepage
         </button>
+        <button class="cms-tab" data-section="why-hilltop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/><path d="M9 12l2 2 4-5"/></svg>
+          Why Hilltop Hero
+        </button>
         <button class="cms-tab" data-section="banners">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
           Banners
@@ -299,6 +303,136 @@
           <button class="action-btn primary" id="btnHpPublish">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
             Publish Changes
+          </button>
+        </div>
+      </section>
+
+      <!-- ── WHY HILLTOP HERO ── -->
+      <section class="cms-panel" id="panel-why-hilltop">
+        <div class="cms-panel-header">
+          <div>
+            <h2 class="cms-panel-title">Why Hilltop Hero</h2>
+            <p class="cms-panel-desc">Edit the secondary video hero and trust cards shown after the Services section.</p>
+          </div>
+        </div>
+
+        <div class="homepage-form-grid">
+          <div class="homepage-form-card hero-video-card">
+            <h3 class="form-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              Section Media
+            </h3>
+            <div class="hero-video-preview" id="whyHeroPreview">
+              <p>No Why Hilltop video configured yet.</p>
+            </div>
+            <div class="info-note" id="whyHeroFallbackNote">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              If no video is saved, the public section keeps its poster or default fallback image.
+            </div>
+            <div class="form-group full">
+              <label>Background Video URL</label>
+              <input type="url" id="whyHeroVideoUrl" placeholder="https://..." />
+            </div>
+            <div class="form-group full">
+              <label>Upload Background Video</label>
+              <input type="file" id="whyHeroVideoFile" accept="video/mp4,video/webm" />
+            </div>
+            <div class="form-group full">
+              <label>Poster / Fallback Image URL</label>
+              <input type="url" id="whyHeroPosterUrl" placeholder="https://..." />
+            </div>
+            <div class="form-group full">
+              <label>Upload Poster / Fallback Image</label>
+              <input type="file" id="whyHeroPosterFile" accept="image/jpeg,image/png,image/webp" />
+            </div>
+            <ul class="hero-video-guidance">
+              <li>Video uploads support MP4 or WebM up to 50MB.</li>
+              <li>Poster uploads support JPG, PNG, or WebP up to 5MB.</li>
+              <li>Saved URLs are public links from the cms-media bucket.</li>
+            </ul>
+            <div class="hero-video-status" id="whyHeroStatus" role="status" aria-live="polite"></div>
+          </div>
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h16"/></svg>
+              Section Text
+            </h3>
+            <div class="form-group full">
+              <label>Eyebrow Text</label>
+              <input type="text" id="whyHeroEyebrow" />
+            </div>
+            <div class="form-group full">
+              <label>Main Heading</label>
+              <input type="text" id="whyHeroTitle" />
+            </div>
+          </div>
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">Card 1</h3>
+            <div class="form-group full">
+              <label>Card 1 Title</label>
+              <input type="text" id="whyCard1Title" />
+            </div>
+            <div class="form-group full">
+              <label>Card 1 Short Description</label>
+              <textarea id="whyCard1Short" rows="2"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 1 Expanded Description</label>
+              <textarea id="whyCard1Expanded" rows="3"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 1 CTA Label</label>
+              <input type="text" id="whyCard1Cta" />
+            </div>
+          </div>
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">Card 2</h3>
+            <div class="form-group full">
+              <label>Card 2 Title</label>
+              <input type="text" id="whyCard2Title" />
+            </div>
+            <div class="form-group full">
+              <label>Card 2 Short Description</label>
+              <textarea id="whyCard2Short" rows="2"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 2 Expanded Description</label>
+              <textarea id="whyCard2Expanded" rows="3"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 2 CTA Label</label>
+              <input type="text" id="whyCard2Cta" />
+            </div>
+          </div>
+
+          <div class="homepage-form-card">
+            <h3 class="form-card-title">Card 3</h3>
+            <div class="form-group full">
+              <label>Card 3 Title</label>
+              <input type="text" id="whyCard3Title" />
+            </div>
+            <div class="form-group full">
+              <label>Card 3 Short Description</label>
+              <textarea id="whyCard3Short" rows="2"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 3 Expanded Description</label>
+              <textarea id="whyCard3Expanded" rows="3"></textarea>
+            </div>
+            <div class="form-group full">
+              <label>Card 3 CTA Label</label>
+              <input type="text" id="whyCard3Cta" />
+            </div>
+          </div>
+        </div>
+
+        <div class="homepage-actions">
+          <button class="action-btn primary" type="button" id="btnWhyHeroSave">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Why Hilltop Hero
           </button>
         </div>
       </section>

@@ -186,6 +186,9 @@ grant select (
   client_role,
   message,
   rating,
+  background_type,
+  background_image_url,
+  background_color,
   display_order,
   is_visible
 ) on public.cms_testimonials to anon;

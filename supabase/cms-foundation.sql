@@ -83,6 +83,9 @@ create table if not exists public.cms_testimonials (
   client_role text,
   message text not null,
   rating integer check (rating >= 1 and rating <= 5),
+  background_type text not null default 'solid' check (background_type in ('image', 'solid')),
+  background_image_url text,
+  background_color text not null default '#071827',
   is_visible boolean not null default true,
   display_order integer not null default 0,
   updated_by uuid references public.staff_users(id) on delete set null,
@@ -92,6 +95,7 @@ create table if not exists public.cms_testimonials (
 
 create index if not exists idx_cms_testimonials_display_order on public.cms_testimonials(display_order);
 create index if not exists idx_cms_testimonials_is_visible on public.cms_testimonials(is_visible);
+create index if not exists idx_cms_testimonials_background_type on public.cms_testimonials(background_type);
 
 drop trigger if exists trg_cms_testimonials_set_updated_at on public.cms_testimonials;
 create trigger trg_cms_testimonials_set_updated_at

@@ -23,6 +23,44 @@ var homepageContent = {
   heroVideoUpdatedAt: ''
 };
 
+var WHY_HILLTOP_DEFAULTS = {
+  videoUrl: '',
+  posterUrl: '',
+  eyebrow: 'WHY HILLTOP',
+  title: 'The Hilltop Advantage',
+  cards: [
+    {
+      title: 'Verified Listings',
+      short: 'Public listings are presented with clear status, branch, and property details.',
+      expanded: 'Hilltop reviews property details, location, ownership information, pricing, and status before presenting listings to clients.',
+      cta: 'Talk to Hilltop'
+    },
+    {
+      title: 'Branch Support',
+      short: 'Lusaka and Livingstone teams help route enquiries to the right office.',
+      expanded: 'Branch teams help coordinate enquiries, viewings, follow-ups, and client support across Hilltop’s operating locations.',
+      cta: 'Talk to Hilltop'
+    },
+    {
+      title: 'Trusted Agents',
+      short: 'Clients know who they are dealing with.',
+      expanded: 'Staff profiles, branch contacts, and guided communication help clients move with more confidence.',
+      cta: 'Talk to Hilltop'
+    }
+  ]
+};
+
+function cloneWhyHilltopDefaults() {
+  return JSON.parse(JSON.stringify(WHY_HILLTOP_DEFAULTS));
+}
+
+var whyHilltopHero = cloneWhyHilltopDefaults();
+var selectedWhyHeroVideoFile = null;
+var selectedWhyHeroPosterFile = null;
+var whyHeroLocalVideoPreviewUrl = '';
+var whyHeroLocalPosterPreviewUrl = '';
+var testimonialBackgroundLocalPreviewUrl = '';
+
 // ── Banners ──────────────────────────────────────────────────
 // Later: supabase.from('banners').select('*')
 var banners = [
@@ -122,6 +160,9 @@ var testimonials = [
     clientType:  'Buyer',
     message:     'Hilltop Properties made buying our family home in Kabulonga completely stress-free. John was professional, honest, and always available. We could not be happier.',
     rating:      5,
+    backgroundType: 'image',
+    backgroundImageUrl: 'assets/images/hero-poster.png',
+    backgroundColor: '#071827',
     branch:      'Lusaka',
     status:      'Published'
   },
@@ -131,6 +172,9 @@ var testimonials = [
     clientType:  'Tenant',
     message:     'I\'ve been renting through Hilltop for two years now and the process has always been smooth. Mary is incredibly helpful and responds quickly to any issues.',
     rating:      5,
+    backgroundType: 'image',
+    backgroundImageUrl: 'assets/images/hero-poster.png',
+    backgroundColor: '#071827',
     branch:      'Lusaka',
     status:      'Published'
   },
@@ -140,6 +184,9 @@ var testimonials = [
     clientType:  'Landlord',
     message:     'Hilltop manages two of my properties and I\'ve had zero headaches. They find quality tenants and handle everything professionally. Highly recommended.',
     rating:      4,
+    backgroundType: 'solid',
+    backgroundImageUrl: '',
+    backgroundColor: '#0b1f2f',
     branch:      'Lusaka',
     status:      'Published'
   },
@@ -149,6 +196,9 @@ var testimonials = [
     clientType:  'Investor',
     message:     'I was looking for riverside investment land near Livingstone and David helped me find an exceptional plot. The whole experience was excellent.',
     rating:      5,
+    backgroundType: 'solid',
+    backgroundImageUrl: '',
+    backgroundColor: '#132c46',
     branch:      'Livingstone',
     status:      'Pending'
   }
@@ -365,9 +415,28 @@ var cmsStaffUsers = [];
 var cmsProperties = [];
 var HERO_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 var HERO_VIDEO_MIN_SECONDS = 30;
+var WHY_HILLTOP_VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 var SERVICE_CASE_STUDY_VIDEO_MAX_BYTES = 30 * 1024 * 1024;
 var SERVICE_SHOWCASE_ICON_KEYS = ['sales', 'rentals', 'verification', 'branch-support', 'marketing'];
 var SERVICE_SHOWCASE_THEMES = ['sales', 'rentals', 'verification', 'support', 'marketing'];
+var WHY_HILLTOP_SETTING_KEYS = [
+  'homepage_why_hero_video_url',
+  'homepage_why_hero_poster_url',
+  'homepage_why_hero_eyebrow',
+  'homepage_why_hero_title',
+  'homepage_why_card_1_title',
+  'homepage_why_card_1_short',
+  'homepage_why_card_1_expanded',
+  'homepage_why_card_1_cta',
+  'homepage_why_card_2_title',
+  'homepage_why_card_2_short',
+  'homepage_why_card_2_expanded',
+  'homepage_why_card_2_cta',
+  'homepage_why_card_3_title',
+  'homepage_why_card_3_short',
+  'homepage_why_card_3_expanded',
+  'homepage_why_card_3_cta'
+];
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -524,7 +593,7 @@ function cmsActionHtml(html) {
 
 function applyCmsPermissions() {
   if (canManageCms()) return;
-  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddServiceShowcase,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
+  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnWhyHeroSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddServiceShowcase,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
     if (btn) btn.style.display = 'none';
   });
 }
@@ -576,6 +645,12 @@ function settingValueUrl(row) {
   return row.setting_value.url || row.setting_value.value || '';
 }
 
+function settingValueText(row) {
+  if (!row || !row.setting_value) return '';
+  if (typeof row.setting_value === 'string') return row.setting_value;
+  return row.setting_value.text || row.setting_value.value || row.setting_value.url || '';
+}
+
 function mapHeroSettings(rows) {
   var lookup = {};
   (rows || []).forEach(function(row) {
@@ -586,6 +661,29 @@ function mapHeroSettings(rows) {
     posterUrl: settingValueUrl(lookup.homepage_hero_poster_url),
     updatedAt: settingValueUrl(lookup.homepage_hero_video_updated_at)
   };
+}
+
+function mapWhyHilltopSettings(rows) {
+  var lookup = {};
+  (rows || []).forEach(function(row) {
+    lookup[row.setting_key] = row;
+  });
+
+  var mapped = cloneWhyHilltopDefaults();
+  mapped.videoUrl = settingValueUrl(lookup.homepage_why_hero_video_url) || mapped.videoUrl;
+  mapped.posterUrl = settingValueUrl(lookup.homepage_why_hero_poster_url) || mapped.posterUrl;
+  mapped.eyebrow = settingValueText(lookup.homepage_why_hero_eyebrow) || mapped.eyebrow;
+  mapped.title = settingValueText(lookup.homepage_why_hero_title) || mapped.title;
+
+  for (var i = 0; i < mapped.cards.length; i += 1) {
+    var cardNumber = i + 1;
+    mapped.cards[i].title = settingValueText(lookup['homepage_why_card_' + cardNumber + '_title']) || mapped.cards[i].title;
+    mapped.cards[i].short = settingValueText(lookup['homepage_why_card_' + cardNumber + '_short']) || mapped.cards[i].short;
+    mapped.cards[i].expanded = settingValueText(lookup['homepage_why_card_' + cardNumber + '_expanded']) || mapped.cards[i].expanded;
+    mapped.cards[i].cta = settingValueText(lookup['homepage_why_card_' + cardNumber + '_cta']) || mapped.cards[i].cta;
+  }
+
+  return mapped;
 }
 
 function mapBanner(row) {
@@ -627,6 +725,9 @@ function mapTestimonial(row) {
     clientType: row.client_role || '',
     message: row.message,
     rating: row.rating || 5,
+    backgroundType: row.background_type || 'solid',
+    backgroundImageUrl: row.background_image_url || '',
+    backgroundColor: row.background_color || '#071827',
     branch: 'All',
     status: row.is_visible ? 'Published' : 'Hidden',
     order: row.display_order || 0
@@ -819,6 +920,114 @@ function selectedFile(fieldId) {
   return input && input.files && input.files.length ? input.files[0] : null;
 }
 
+function revokeTestimonialBackgroundLocalPreview() {
+  if (testimonialBackgroundLocalPreviewUrl) {
+    URL.revokeObjectURL(testimonialBackgroundLocalPreviewUrl);
+    testimonialBackgroundLocalPreviewUrl = '';
+  }
+}
+
+function renderTestimonialBackgroundPreview(src, message) {
+  var preview = document.getElementById('testimonialBackgroundPreview');
+  var status = document.getElementById('testimonialBackgroundUploadStatus');
+  if (!preview) return;
+
+  var imageUrl = String(src || '').trim();
+  if (imageUrl) {
+    preview.innerHTML = [
+      '<img src="' + escapeAttribute(imageUrl) + '" alt="Testimonial background image preview" />',
+      '<button class="testimonial-bg-preview-remove" type="button" id="testimonialBgRemove">Remove</button>'
+    ].join('');
+  } else {
+    preview.innerHTML = '<div class="testimonial-bg-preview-empty">No testimonial background image selected.</div>';
+  }
+
+  if (status) status.textContent = message || '';
+
+  var previewImage = preview.querySelector('img');
+  if (previewImage && status) {
+    previewImage.addEventListener('error', function () {
+      status.textContent = 'Image preview could not load. Check that the URL is public and correct.';
+    }, { once: true });
+  }
+
+  var removeButton = document.getElementById('testimonialBgRemove');
+  if (removeButton) {
+    removeButton.addEventListener('click', function () {
+      revokeTestimonialBackgroundLocalPreview();
+      var urlInput = document.getElementById('mf_backgroundImageUrl');
+      var fileInput = document.getElementById('mf_backgroundImageFile');
+      var typeInput = document.getElementById('mf_backgroundType');
+      if (urlInput) urlInput.value = '';
+      if (fileInput) fileInput.value = '';
+      if (typeInput) typeInput.value = 'solid';
+      renderTestimonialBackgroundPreview('', 'Background image removed. Save the testimonial to keep this change.');
+    });
+  }
+}
+
+async function handleTestimonialBackgroundFileChange(event) {
+  var file = event.target && event.target.files && event.target.files[0];
+  if (!file) return;
+
+  var validationError = validateCmsImageFile(file);
+  if (validationError) {
+    showToast(validationError, 'error');
+    event.target.value = '';
+    return;
+  }
+
+  revokeTestimonialBackgroundLocalPreview();
+  testimonialBackgroundLocalPreviewUrl = URL.createObjectURL(file);
+  renderTestimonialBackgroundPreview(testimonialBackgroundLocalPreviewUrl, modalMode === 'edit'
+    ? 'Uploading selected image...'
+    : 'Image selected. It will upload when you save the testimonial.');
+
+  var typeInput = document.getElementById('mf_backgroundType');
+  if (typeInput) typeInput.value = 'image';
+
+  if (modalMode !== 'edit' || !modalEditId) return;
+
+  var uploadedUrl = await uploadCmsMedia('testimonials', modalEditId, file, {
+    uploadingMessage: 'Uploading image...',
+    successMessage: 'Image uploaded successfully.',
+    errorMessage: 'Failed to upload image. Check storage setup and try again.'
+  });
+
+  if (!uploadedUrl) {
+    renderTestimonialBackgroundPreview(testimonialBackgroundLocalPreviewUrl, 'Upload failed. You can try again or paste an image URL.');
+    return;
+  }
+
+  var urlInput = document.getElementById('mf_backgroundImageUrl');
+  if (urlInput) urlInput.value = uploadedUrl;
+  event.target.value = '';
+  revokeTestimonialBackgroundLocalPreview();
+  renderTestimonialBackgroundPreview(uploadedUrl, 'Image uploaded successfully. Save the testimonial to publish this background.');
+}
+
+function initTestimonialBackgroundControls() {
+  revokeTestimonialBackgroundLocalPreview();
+
+  var urlInput = document.getElementById('mf_backgroundImageUrl');
+  var fileInput = document.getElementById('mf_backgroundImageFile');
+  var typeInput = document.getElementById('mf_backgroundType');
+
+  renderTestimonialBackgroundPreview(urlInput ? urlInput.value : '');
+
+  if (urlInput) {
+    urlInput.addEventListener('input', function () {
+      revokeTestimonialBackgroundLocalPreview();
+      if (typeInput && urlInput.value.trim()) typeInput.value = 'image';
+      renderTestimonialBackgroundPreview(urlInput.value, urlInput.value.trim() ? 'Previewing image URL. Save the testimonial to keep this URL.' : '');
+    });
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', handleTestimonialBackgroundFileChange);
+  }
+}
+
 function getNextDisplayOrder(items) {
   if (!items || !items.length) return 1;
   return Math.max.apply(null, items.map(function(item) {
@@ -898,6 +1107,13 @@ function setHeroVideoStatus(message, type) {
   status.className = 'hero-video-status' + (type ? ' ' + type : '');
 }
 
+function setWhyHeroStatus(message, type) {
+  var status = document.getElementById('whyHeroStatus');
+  if (!status) return;
+  status.textContent = message || '';
+  status.className = 'hero-video-status' + (type ? ' ' + type : '');
+}
+
 function validateHeroPosterFile(file) {
   return validateCmsImageFile(file);
 }
@@ -940,6 +1156,21 @@ async function validateHeroVideoFile(file) {
     return 'Could not read the selected video. Please choose another MP4 or WebM file.';
   }
 
+  return null;
+}
+
+function validateWhyHilltopVideoFile(file) {
+  if (!file) return null;
+  var allowedTypes = ['video/mp4', 'video/webm'];
+  var fileName = String(file.name || '').toLowerCase();
+  var allowedExtension = fileName.endsWith('.mp4') || fileName.endsWith('.webm');
+  var videoFamily = String(file.type || '').indexOf('video/') === 0;
+  if (allowedTypes.indexOf(file.type) === -1 && !allowedExtension && !videoFamily) {
+    return 'Please upload an MP4 or WebM video.';
+  }
+  if (file.size > WHY_HILLTOP_VIDEO_MAX_BYTES) {
+    return 'Video is too large. Maximum allowed size is 50MB.';
+  }
   return null;
 }
 
@@ -987,6 +1218,89 @@ async function uploadHeroMedia(kind, file) {
   return publicUrl;
 }
 
+function buildWhyHilltopMediaPath(kind, file) {
+  var safe = safeFileName(file.name);
+  var extension = safe.indexOf('.') !== -1 ? safe.split('.').pop() : (kind === 'video' ? 'mp4' : 'jpg');
+  if (kind === 'video') {
+    return 'why-hilltop/why-video-' + Date.now() + '.' + extension;
+  }
+  return 'why-hilltop/why-poster-' + Date.now() + '.' + extension;
+}
+
+async function requireSupabaseUploadSession(supabase) {
+  if (!supabase || !supabase.auth || typeof supabase.auth.getSession !== 'function') {
+    throw new Error('You must be logged in to upload CMS media.');
+  }
+
+  var sessionResult = await supabase.auth.getSession();
+  if (sessionResult.error) {
+    throw new Error(sessionResult.error.message || 'You must be logged in to upload CMS media.');
+  }
+  if (!sessionResult.data || !sessionResult.data.session) {
+    throw new Error('You must be logged in to upload CMS media.');
+  }
+}
+
+async function uploadWhyHilltopMedia(kind, file) {
+  if (!requireCmsMediaPermission()) return null;
+
+  var supabase = getSupabaseClient();
+  if (!supabase) {
+    setWhyHeroStatus('Supabase is not available. Please check your connection and configuration.', 'error');
+    return null;
+  }
+
+  var path = buildWhyHilltopMediaPath(kind, file);
+  try {
+    await requireSupabaseUploadSession(supabase);
+  } catch (error) {
+    var authMessage = error && error.message ? error.message : 'You must be logged in to upload CMS media.';
+    updateWhyHeroCmsDiagnostics({
+      uploadAttempted: false,
+      uploadPath: path,
+      uploadError: authMessage
+    });
+    throw new Error(authMessage);
+  }
+
+  updateWhyHeroCmsDiagnostics({
+    uploadAttempted: true,
+    uploadPath: path,
+    uploadError: ''
+  });
+  var uploadResult = await supabase.storage
+    .from('cms-media')
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    });
+
+  if (uploadResult.error) {
+    console.warn('Why Hilltop media upload failed.', uploadResult.error);
+    var uploadMessage = uploadResult.error.message || 'Could not upload Why Hilltop media. Run supabase/cms-media-storage.sql and try again.';
+    updateWhyHeroCmsDiagnostics({ uploadError: uploadMessage });
+    throw new Error(uploadMessage);
+  }
+
+  var publicUrlResult = supabase.storage
+    .from('cms-media')
+    .getPublicUrl(path);
+
+  var publicUrl = publicUrlResult &&
+    publicUrlResult.data &&
+    publicUrlResult.data.publicUrl;
+
+  if (!publicUrl) {
+    var publicUrlMessage = 'Why Hilltop media uploaded, but the public URL could not be created.';
+    updateWhyHeroCmsDiagnostics({ uploadError: publicUrlMessage });
+    throw new Error(publicUrlMessage);
+  }
+
+  updateWhyHeroCmsDiagnostics({ publicUrl: publicUrl });
+  return publicUrl;
+}
+
 function buildCmsMediaPath(folder, recordId, file) {
   return [
     'cms',
@@ -996,7 +1310,8 @@ function buildCmsMediaPath(folder, recordId, file) {
   ].join('/');
 }
 
-async function uploadCmsMedia(folder, recordId, file) {
+async function uploadCmsMedia(folder, recordId, file, options) {
+  options = options || {};
   if (!requireCmsMediaPermission()) return null;
   if (!recordId) {
     showToast('Save the CMS record before uploading media.', 'error');
@@ -1016,7 +1331,7 @@ async function uploadCmsMedia(folder, recordId, file) {
   }
 
   var path = buildCmsMediaPath(folder, recordId, file);
-  showToast('Uploading CMS media...', 'success');
+  showToast(options.uploadingMessage || 'Uploading image...', 'success');
 
   var uploadResult = await supabase.storage
     .from('cms-media')
@@ -1028,7 +1343,7 @@ async function uploadCmsMedia(folder, recordId, file) {
 
   if (uploadResult.error) {
     console.warn('CMS media upload failed.', uploadResult.error);
-    showToast('Could not upload CMS media. Run supabase/cms-media-storage.sql and try again.', 'error');
+    showToast(options.errorMessage || 'Failed to upload image. Check storage setup and try again.', 'error');
     return null;
   }
 
@@ -1042,11 +1357,11 @@ async function uploadCmsMedia(folder, recordId, file) {
 
   if (!publicUrl) {
     console.warn('CMS media upload succeeded but no public URL was returned.', publicUrlResult);
-    showToast('CMS media uploaded, but the public URL could not be created.', 'error');
+    showToast('Image uploaded, but the public URL could not be created.', 'error');
     return null;
   }
 
-  showToast('CMS media uploaded successfully.', 'success');
+  showToast(options.successMessage || 'Image uploaded successfully.', 'success');
   return publicUrl;
 }
 
@@ -1186,9 +1501,14 @@ function getTestimonialPayload() {
     client_role: cleanValue(fieldValue('mf_clientType')),
     message: fieldValue('mf_message'),
     rating: rating,
-    display_order: modalMode === 'edit'
-      ? Number((testimonials.find(function(item) { return item.id === modalEditId; }) || {}).order || 0)
-      : getNextDisplayOrder(testimonials),
+    background_type: cleanValue(fieldValue('mf_backgroundType')) || 'solid',
+    background_image_url: cleanValue(fieldValue('mf_backgroundImageUrl')),
+    background_color: cleanValue(fieldValue('mf_backgroundColor')) || '#071827',
+    display_order: Number(fieldValue('mf_displayOrder') || (
+      modalMode === 'edit'
+        ? Number((testimonials.find(function(item) { return item.id === modalEditId; }) || {}).order || 0)
+        : getNextDisplayOrder(testimonials)
+    )),
     is_visible: fieldValue('mf_status') === 'Published',
     updated_by: getCurrentStaffId(),
     updated_at: new Date().toISOString()
@@ -1286,6 +1606,15 @@ async function loadHeroVideoSettings(supabase) {
   return response.data || [];
 }
 
+async function loadWhyHilltopSettings(supabase) {
+  var response = await supabase
+    .from('app_settings')
+    .select('setting_key, setting_value')
+    .in('setting_key', WHY_HILLTOP_SETTING_KEYS);
+  if (response.error) throw response.error;
+  return response.data || [];
+}
+
 async function loadBanners(supabase) {
   var response = await supabase
     .from('cms_banners')
@@ -1309,7 +1638,7 @@ async function loadTeamProfiles(supabase) {
 async function loadTestimonials(supabase) {
   var response = await supabase
     .from('cms_testimonials')
-    .select('id, client_name, client_role, message, rating, is_visible, display_order, updated_by, created_at, updated_at')
+    .select('id, client_name, client_role, message, rating, background_type, background_image_url, background_color, is_visible, display_order, updated_by, created_at, updated_at')
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (response.error) throw response.error;
@@ -1378,6 +1707,7 @@ async function loadCMSData() {
     var propertiesResult = await loadCmsProperties(supabase);
     var homepageResult = await loadHomepageContent(supabase);
     var heroSettingsResult = await loadHeroVideoSettings(supabase);
+    var whyHilltopSettingsResult = await loadWhyHilltopSettings(supabase);
     var bannerResult = await loadBanners(supabase);
     var teamResult = await loadTeamProfiles(supabase);
     var testimonialResult = await loadTestimonials(supabase);
@@ -1394,6 +1724,7 @@ async function loadCMSData() {
     homepageContent.heroVideoUrl = heroSettings.videoUrl;
     homepageContent.heroPosterUrl = heroSettings.posterUrl;
     homepageContent.heroVideoUpdatedAt = heroSettings.updatedAt;
+    whyHilltopHero = mapWhyHilltopSettings(whyHilltopSettingsResult);
     banners = bannerResult.map(mapBanner);
     teamProfiles = teamResult.map(function(row) { return mapTeamProfile(row, staffLookup); });
     testimonials = testimonialResult.map(mapTestimonial);
@@ -1467,9 +1798,9 @@ function switchSection(section) {
     p.classList.toggle('active', p.id === 'panel-' + section);
   });
 
-  // Hide filter bar on homepage section (it has its own controls)
+  // Hide filter bar on form sections that have their own controls.
   var filterBar = document.getElementById('cmsFilterBar');
-  filterBar.style.display = (section === 'homepage') ? 'none' : 'flex';
+  filterBar.style.display = (section === 'homepage' || section === 'why-hilltop') ? 'none' : 'flex';
 
   // Render the active section
   renderSection(section);
@@ -1477,6 +1808,7 @@ function switchSection(section) {
 
 function renderSection(section) {
   if (section === 'homepage')     renderHomepage();
+  if (section === 'why-hilltop')  renderWhyHilltopHero();
   if (section === 'banners')      renderBanners();
   if (section === 'team')         renderTeam();
   if (section === 'testimonials') renderTestimonials();
@@ -1639,6 +1971,357 @@ async function saveHeroVideoSettings() {
 document.getElementById('btnHeroVideoSave').addEventListener('click', function() {
   saveHeroVideoSettings();
 });
+
+function setFieldValue(fieldId, value) {
+  var field = document.getElementById(fieldId);
+  if (field) field.value = value || '';
+}
+
+function updateWhyHeroCmsDiagnostics(patch) {
+  var current = window.__whyHeroCmsDiagnostics || {
+    selectedVideoName: '',
+    selectedVideoSize: 0,
+    selectedVideoType: '',
+    hasSelectedVideoFile: false,
+    saveClicked: false,
+    uploadAttempted: false,
+    uploadPath: '',
+    uploadError: '',
+    publicUrl: '',
+    appSettingsSaveAttempted: false,
+    appSettingsSaveError: '',
+    savedVideoUrl: '',
+    saveError: ''
+  };
+  window.__whyHeroCmsDiagnostics = Object.assign(current, patch || {});
+}
+
+function revokeWhyHeroLocalPreview(kind) {
+  if ((!kind || kind === 'video') && whyHeroLocalVideoPreviewUrl) {
+    URL.revokeObjectURL(whyHeroLocalVideoPreviewUrl);
+    whyHeroLocalVideoPreviewUrl = '';
+  }
+  if ((!kind || kind === 'poster') && whyHeroLocalPosterPreviewUrl) {
+    URL.revokeObjectURL(whyHeroLocalPosterPreviewUrl);
+    whyHeroLocalPosterPreviewUrl = '';
+  }
+}
+
+function renderWhyHeroSelectedPreview(message) {
+  var preview = document.getElementById('whyHeroPreview');
+  if (!preview) return;
+
+  if (whyHeroLocalVideoPreviewUrl) {
+    preview.innerHTML = '<video controls muted loop playsinline preload="metadata"' +
+      (whyHeroLocalPosterPreviewUrl ? ' poster="' + escapeAttribute(whyHeroLocalPosterPreviewUrl) + '"' : '') +
+      '><source src="' + escapeAttribute(whyHeroLocalVideoPreviewUrl) + '"></video>';
+    var previewVideo = preview.querySelector('video');
+    if (previewVideo) {
+      previewVideo.load();
+      var playPromise = previewVideo.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function() {
+          // Controls remain available if autoplay is blocked in the dashboard preview.
+        });
+      }
+    }
+  } else if (whyHeroLocalPosterPreviewUrl) {
+    preview.innerHTML = '<img src="' + escapeAttribute(whyHeroLocalPosterPreviewUrl) + '" alt="Selected Why Hilltop poster preview" />';
+  } else {
+    renderWhyHeroPreview();
+    return;
+  }
+
+  setWhyHeroStatus(message || 'Media selected. Click Save to upload and publish.', 'success');
+}
+
+function renderWhyHeroPreview() {
+  var preview = document.getElementById('whyHeroPreview');
+  if (!preview) return;
+
+  revokeWhyHeroLocalPreview();
+
+  if (whyHilltopHero.videoUrl) {
+    preview.innerHTML = '<video controls muted preload="metadata"' +
+      (whyHilltopHero.posterUrl ? ' poster="' + escapeAttribute(whyHilltopHero.posterUrl) + '"' : '') +
+      '><source src="' + escapeAttribute(whyHilltopHero.videoUrl) + '"></video>';
+  } else if (whyHilltopHero.posterUrl) {
+    preview.innerHTML = '<img src="' + escapeAttribute(whyHilltopHero.posterUrl) + '" alt="Why Hilltop poster preview" />';
+  } else {
+    preview.innerHTML = '<p>No Why Hilltop video configured yet.</p>';
+  }
+
+  setWhyHeroStatus(whyHilltopHero.videoUrl ? 'Why Hilltop video configured.' : 'No video saved. The public section will use the poster or default fallback image.', whyHilltopHero.videoUrl ? 'success' : '');
+}
+
+function renderWhyHilltopHero() {
+  setFieldValue('whyHeroVideoUrl', whyHilltopHero.videoUrl);
+  setFieldValue('whyHeroPosterUrl', whyHilltopHero.posterUrl);
+  setFieldValue('whyHeroEyebrow', whyHilltopHero.eyebrow);
+  setFieldValue('whyHeroTitle', whyHilltopHero.title);
+
+  whyHilltopHero.cards.forEach(function(card, index) {
+    var cardNumber = index + 1;
+    setFieldValue('whyCard' + cardNumber + 'Title', card.title);
+    setFieldValue('whyCard' + cardNumber + 'Short', card.short);
+    setFieldValue('whyCard' + cardNumber + 'Expanded', card.expanded);
+    setFieldValue('whyCard' + cardNumber + 'Cta', card.cta);
+  });
+
+  renderWhyHeroPreview();
+}
+
+function readWhyHilltopForm() {
+  var next = cloneWhyHilltopDefaults();
+  next.videoUrl = cleanValue(fieldValue('whyHeroVideoUrl'));
+  next.posterUrl = cleanValue(fieldValue('whyHeroPosterUrl'));
+  next.eyebrow = cleanValue(fieldValue('whyHeroEyebrow')) || WHY_HILLTOP_DEFAULTS.eyebrow;
+  next.title = cleanValue(fieldValue('whyHeroTitle')) || WHY_HILLTOP_DEFAULTS.title;
+
+  for (var i = 0; i < next.cards.length; i += 1) {
+    var cardNumber = i + 1;
+    next.cards[i].title = cleanValue(fieldValue('whyCard' + cardNumber + 'Title')) || WHY_HILLTOP_DEFAULTS.cards[i].title;
+    next.cards[i].short = cleanValue(fieldValue('whyCard' + cardNumber + 'Short')) || WHY_HILLTOP_DEFAULTS.cards[i].short;
+    next.cards[i].expanded = cleanValue(fieldValue('whyCard' + cardNumber + 'Expanded')) || WHY_HILLTOP_DEFAULTS.cards[i].expanded;
+    next.cards[i].cta = cleanValue(fieldValue('whyCard' + cardNumber + 'Cta')) || WHY_HILLTOP_DEFAULTS.cards[i].cta;
+  }
+
+  whyHilltopHero = next;
+}
+
+function handleWhyHeroVideoFileChange(event) {
+  var input = event.target;
+  var file = input && input.files && input.files.length ? input.files[0] : null;
+  selectedWhyHeroVideoFile = file;
+  updateWhyHeroCmsDiagnostics({
+    selectedVideoName: file ? file.name : '',
+    selectedVideoSize: file ? file.size : 0,
+    selectedVideoType: file ? file.type : '',
+    hasSelectedVideoFile: Boolean(file),
+    saveClicked: false,
+    uploadAttempted: false,
+    uploadPath: '',
+    uploadError: '',
+    publicUrl: '',
+    appSettingsSaveAttempted: false,
+    appSettingsSaveError: '',
+    saveError: ''
+  });
+
+  revokeWhyHeroLocalPreview('video');
+
+  if (!file) {
+    renderWhyHeroSelectedPreview();
+    return;
+  }
+
+  var validationError = validateWhyHilltopVideoFile(file);
+  if (validationError) {
+    selectedWhyHeroVideoFile = null;
+    input.value = '';
+    renderWhyHeroSelectedPreview();
+    setWhyHeroStatus(validationError, 'error');
+    showToast(validationError, 'error');
+    return;
+  }
+
+  whyHeroLocalVideoPreviewUrl = URL.createObjectURL(file);
+  renderWhyHeroSelectedPreview('Video selected. Click Save to upload and publish.');
+}
+
+function handleWhyHeroPosterFileChange(event) {
+  var input = event.target;
+  var file = input && input.files && input.files.length ? input.files[0] : null;
+  selectedWhyHeroPosterFile = file;
+
+  revokeWhyHeroLocalPreview('poster');
+
+  if (!file) {
+    renderWhyHeroSelectedPreview();
+    return;
+  }
+
+  var validationError = validateCmsImageFile(file);
+  if (validationError) {
+    selectedWhyHeroPosterFile = null;
+    input.value = '';
+    renderWhyHeroSelectedPreview();
+    setWhyHeroStatus(validationError, 'error');
+    showToast(validationError, 'error');
+    return;
+  }
+
+  whyHeroLocalPosterPreviewUrl = URL.createObjectURL(file);
+  renderWhyHeroSelectedPreview(selectedWhyHeroVideoFile ? 'Media selected. Click Save to upload and publish.' : 'Poster selected. Click Save to upload and publish.');
+}
+
+function whyHilltopRows(updatedBy) {
+  var rows = [
+    {
+      setting_key: 'homepage_why_hero_video_url',
+      setting_category: 'public_homepage',
+      setting_value: { url: whyHilltopHero.videoUrl || '' },
+      updated_by: updatedBy
+    },
+    {
+      setting_key: 'homepage_why_hero_poster_url',
+      setting_category: 'public_homepage',
+      setting_value: { url: whyHilltopHero.posterUrl || '' },
+      updated_by: updatedBy
+    },
+    {
+      setting_key: 'homepage_why_hero_eyebrow',
+      setting_category: 'public_homepage',
+      setting_value: { text: whyHilltopHero.eyebrow || WHY_HILLTOP_DEFAULTS.eyebrow },
+      updated_by: updatedBy
+    },
+    {
+      setting_key: 'homepage_why_hero_title',
+      setting_category: 'public_homepage',
+      setting_value: { text: whyHilltopHero.title || WHY_HILLTOP_DEFAULTS.title },
+      updated_by: updatedBy
+    }
+  ];
+
+  whyHilltopHero.cards.forEach(function(card, index) {
+    var cardNumber = index + 1;
+    rows.push(
+      {
+        setting_key: 'homepage_why_card_' + cardNumber + '_title',
+        setting_category: 'public_homepage',
+        setting_value: { text: card.title || WHY_HILLTOP_DEFAULTS.cards[index].title },
+        updated_by: updatedBy
+      },
+      {
+        setting_key: 'homepage_why_card_' + cardNumber + '_short',
+        setting_category: 'public_homepage',
+        setting_value: { text: card.short || WHY_HILLTOP_DEFAULTS.cards[index].short },
+        updated_by: updatedBy
+      },
+      {
+        setting_key: 'homepage_why_card_' + cardNumber + '_expanded',
+        setting_category: 'public_homepage',
+        setting_value: { text: card.expanded || WHY_HILLTOP_DEFAULTS.cards[index].expanded },
+        updated_by: updatedBy
+      },
+      {
+        setting_key: 'homepage_why_card_' + cardNumber + '_cta',
+        setting_category: 'public_homepage',
+        setting_value: { text: card.cta || WHY_HILLTOP_DEFAULTS.cards[index].cta },
+        updated_by: updatedBy
+      }
+    );
+  });
+
+  return rows;
+}
+
+async function saveWhyHilltopHeroSettings() {
+  updateWhyHeroCmsDiagnostics({
+    saveClicked: true,
+    saveError: '',
+    appSettingsSaveError: ''
+  });
+
+  if (!ensureCmsReadyForWrite()) return;
+
+  readWhyHilltopForm();
+
+  var videoFile = selectedWhyHeroVideoFile || selectedFile('whyHeroVideoFile');
+  var posterFile = selectedWhyHeroPosterFile || selectedFile('whyHeroPosterFile');
+  var videoError = videoFile ? validateWhyHilltopVideoFile(videoFile) : null;
+  var posterError = posterFile ? validateCmsImageFile(posterFile) : null;
+
+  if (videoError || posterError) {
+    updateWhyHeroCmsDiagnostics({ saveError: videoError || posterError });
+    setWhyHeroStatus(videoError || posterError, 'error');
+    showToast(videoError || posterError, 'error');
+    return;
+  }
+
+  try {
+    var supabase = getSupabaseClient();
+    updateWhyHeroCmsDiagnostics({
+      uploadAttempted: false,
+      uploadError: '',
+      publicUrl: '',
+      appSettingsSaveAttempted: false,
+      appSettingsSaveError: '',
+      saveError: '',
+      savedVideoUrl: whyHilltopHero.videoUrl || ''
+    });
+
+    if (videoFile || posterFile) {
+      setWhyHeroStatus('Uploading Why Hilltop media...', '');
+    }
+
+    if (videoFile) {
+      whyHilltopHero.videoUrl = await uploadWhyHilltopMedia('video', videoFile) || whyHilltopHero.videoUrl;
+      setFieldValue('whyHeroVideoUrl', whyHilltopHero.videoUrl);
+    }
+
+    if (posterFile) {
+      whyHilltopHero.posterUrl = await uploadWhyHilltopMedia('poster', posterFile) || whyHilltopHero.posterUrl;
+      setFieldValue('whyHeroPosterUrl', whyHilltopHero.posterUrl);
+    }
+
+    setWhyHeroStatus('Saving Why Hilltop settings...', '');
+    updateWhyHeroCmsDiagnostics({
+      appSettingsSaveAttempted: true,
+      appSettingsSaveError: ''
+    });
+
+    var result = await supabase
+      .from('app_settings')
+      .upsert(whyHilltopRows(getCurrentStaffId()), { onConflict: 'setting_key' });
+
+    if (result.error) {
+      var appSettingsMessage = result.error.message || 'Could not save Why Hilltop settings.';
+      updateWhyHeroCmsDiagnostics({ appSettingsSaveError: appSettingsMessage });
+      throw new Error(appSettingsMessage);
+    }
+
+    var videoInput = document.getElementById('whyHeroVideoFile');
+    var posterInput = document.getElementById('whyHeroPosterFile');
+    if (videoInput) videoInput.value = '';
+    if (posterInput) posterInput.value = '';
+    selectedWhyHeroVideoFile = null;
+    selectedWhyHeroPosterFile = null;
+    updateWhyHeroCmsDiagnostics({
+      savedVideoUrl: whyHilltopHero.videoUrl || '',
+      appSettingsSaveError: '',
+      saveError: ''
+    });
+
+    renderWhyHilltopHero();
+    await logCmsActivity('CMS_WHY_HILLTOP_HERO_UPDATED', 'Why Hilltop hero settings were updated.');
+    setWhyHeroStatus('Why Hilltop Hero saved successfully.', 'success');
+    showToast('Why Hilltop Hero saved successfully.', 'success');
+  } catch (error) {
+    console.warn('Why Hilltop Hero save failed.', error);
+    var message = error && error.message ? error.message : 'Why Hilltop Hero could not be saved. Please try again.';
+    updateWhyHeroCmsDiagnostics({ saveError: message });
+    setWhyHeroStatus(message, 'error');
+    showToast(message, 'error');
+  }
+}
+
+var whyHeroVideoFileInput = document.getElementById('whyHeroVideoFile');
+if (whyHeroVideoFileInput) {
+  whyHeroVideoFileInput.addEventListener('change', handleWhyHeroVideoFileChange);
+}
+
+var whyHeroPosterFileInput = document.getElementById('whyHeroPosterFile');
+if (whyHeroPosterFileInput) {
+  whyHeroPosterFileInput.addEventListener('change', handleWhyHeroPosterFileChange);
+}
+
+var btnWhyHeroSave = document.getElementById('btnWhyHeroSave');
+if (btnWhyHeroSave) {
+  btnWhyHeroSave.addEventListener('click', function() {
+    saveWhyHilltopHeroSettings();
+  });
+}
 
 async function saveHomepageContent() {
   if (!ensureCmsReadyForWrite()) return;
@@ -2036,6 +2719,7 @@ function renderTestimonials() {
         '<div class="testimonial-client">' + t.clientName + '</div>',
         '<div class="testimonial-type">' + t.clientType + '</div>',
         '<div class="testimonial-stars">' + renderStars(t.rating) + '</div>',
+        '<div class="testimonial-type">Background: ' + (t.backgroundType === 'image' ? 'Image' : 'Solid') + (t.backgroundType === 'image' && t.backgroundImageUrl ? ' · image set' : '') + '</div>',
         '<div class="testimonial-message">"' + t.message + '"</div>',
         '<div class="testimonial-meta">',
           '<span class="badge ' + bc + '">' + t.status + '</span>',
@@ -2103,6 +2787,7 @@ async function saveTestimonialFromModal() {
   if (!ensureCmsReadyForWrite()) return;
 
   var payload = getTestimonialPayload();
+  var backgroundFile = selectedFile('mf_backgroundImageFile');
   if (!payload.client_name) {
     showToast('Please enter a client name', 'error');
     return;
@@ -2115,6 +2800,19 @@ async function saveTestimonialFromModal() {
     showToast('Rating must be between 1 and 5', 'error');
     return;
   }
+  if (payload.background_type === 'image' && !payload.background_image_url && !backgroundFile) {
+    showToast('Add a background image URL or choose a file for image background testimonials.', 'error');
+    return;
+  }
+  if (backgroundFile) {
+    var backgroundFileError = validateCmsImageFile(backgroundFile);
+    if (backgroundFileError) {
+      showToast(backgroundFileError, 'error');
+      return;
+    }
+    payload.background_type = 'image';
+    delete payload.background_image_url;
+  }
 
   try {
     var supabase = getSupabaseClient();
@@ -2124,12 +2822,37 @@ async function saveTestimonialFromModal() {
       : await supabase.from('cms_testimonials').insert(payload).select('id').single();
 
     if (result.error) throw result.error;
+    var testimonialId = result.data && result.data.id ? result.data.id : modalEditId;
     await logCmsActivity(actionType, modalMode === 'edit' ? 'CMS testimonial was updated.' : 'CMS testimonial was created.');
+
+    var mediaUploaded = false;
+    if (backgroundFile) {
+      var backgroundUrl = await uploadCmsMedia('testimonials', testimonialId, backgroundFile);
+      if (!backgroundUrl) throw new Error('Failed to upload image');
+
+      var mediaUpdate = await supabase
+        .from('cms_testimonials')
+        .update({
+          background_type: 'image',
+          background_image_url: backgroundUrl,
+          updated_by: getCurrentStaffId(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', testimonialId);
+      if (mediaUpdate.error) throw mediaUpdate.error;
+      mediaUploaded = true;
+      await logCmsActivity('CMS_TESTIMONIAL_MEDIA_UPLOADED', 'CMS testimonial background image was uploaded.');
+    }
+
     closeCmsModal();
-    await reloadCmsAfterWrite(modalMode === 'edit' ? 'Testimonial updated.' : 'Testimonial created.');
+    await reloadCmsAfterWrite(
+      mediaUploaded
+        ? 'Testimonial saved and background image uploaded.'
+        : (modalMode === 'edit' ? 'Testimonial updated.' : 'Testimonial created.')
+    );
   } catch (error) {
     console.warn('CMS testimonial save failed.', error);
-    showToast('Could not save testimonial. Please try again.', 'error');
+    showToast(error && error.message === 'Failed to upload image' ? 'Failed to upload image. Please try again.' : 'Failed to save testimonial. Please try again.', 'error');
   }
 }
 
@@ -3038,6 +3761,9 @@ function openCmsModal(type, mode, id) {
 
   // Inject the correct form into the modal body
   cmsModalBody.innerHTML = buildModalForm(type, mode, id);
+  if (type === 'testimonial') {
+    initTestimonialBackgroundControls();
+  }
 
   // Show modal
   cmsModal.style.display = 'flex';
@@ -3179,6 +3905,28 @@ function buildModalForm(type, mode, id) {
         '<textarea id="mf_message" rows="4">' + v('message') + '</textarea></div>',
       '<div class="form-group full"><label>Rating</label>',
         '<div class="star-rating-input">' + stars + '</div></div>',
+      '<div class="form-section-label">Carousel Background</div>',
+      '<div class="form-row">',
+        '<div class="form-group half"><label>Background Type</label>',
+          '<select id="mf_backgroundType">',
+            '<option value="image"' + (v('backgroundType', 'solid') === 'image' ? ' selected' : '') + '>Image background</option>',
+            '<option value="solid"' + (v('backgroundType', 'solid') === 'solid' ? ' selected' : '') + '>Solid navy / blue background</option>',
+          '</select></div>',
+        '<div class="form-group half"><label>Solid Background Color</label>',
+          '<input type="text" id="mf_backgroundColor" value="' + v('backgroundColor', '#071827') + '" placeholder="#071827" />',
+          '<p class="field-helper">Used when the background type is solid or when an image fails to load.</p></div>',
+      '</div>',
+      '<div class="form-group full"><label>Background Image URL</label>',
+        '<input type="url" id="mf_backgroundImageUrl" value="' + v('backgroundImageUrl') + '" placeholder="https://… or assets/images/hero-poster.png" /></div>',
+      '<label class="cms-img-upload" for="mf_backgroundImageFile">',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
+        '<p>Choose a testimonial background image</p>',
+        '<span>JPG, PNG, or WebP. Maximum 5MB.</span>',
+        '<input type="file" id="mf_backgroundImageFile" accept="image/jpeg,image/png,image/webp" />',
+      '</label>',
+      '<p class="cms-img-note">Uploads save public URLs in the cms-media bucket. Manual image URLs remain supported.</p>',
+      '<div class="testimonial-bg-preview" id="testimonialBackgroundPreview"></div>',
+      '<div class="testimonial-bg-upload-status" id="testimonialBackgroundUploadStatus"></div>',
       '<div class="form-row">',
         '<div class="form-group half"><label>Branch</label>',
           '<select id="mf_branch">' + branchOptions + '</select></div>',
@@ -3188,7 +3936,10 @@ function buildModalForm(type, mode, id) {
             '<option value="Published"' + (v('status') === 'Published' ? ' selected' : '') + '>Published</option>',
             '<option value="Hidden"'    + (v('status') === 'Hidden'    ? ' selected' : '') + '>Hidden</option>',
           '</select></div>',
-      '</div>'
+      '</div>',
+      '<div class="form-group full"><label>Display Order</label>',
+        '<input type="number" id="mf_displayOrder" min="0" step="1" value="' + v('order', getNextDisplayOrder(testimonials)) + '" />',
+        '<p class="field-helper">Lower numbers appear earlier in the homepage testimonial carousel.</p></div>'
     ].join('');
   }
 
@@ -3409,6 +4160,7 @@ function saveCmsModal() {
 ══════════════════════════════════════════════════════════════ */
 
 function closeCmsModal() {
+  revokeTestimonialBackgroundLocalPreview();
   cmsModal.classList.remove('open');
   modalOverlay.classList.remove('active');
   document.body.style.overflow = '';
