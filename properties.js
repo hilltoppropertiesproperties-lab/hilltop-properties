@@ -388,9 +388,56 @@ function formatPrice(price, purpose) {
 }
 
 function parsePrice(value) {
-  var cleaned = String(value || '').replace(/ZMW/gi, '').replace(/\/ month/gi, '').replace(/,/g, '').trim();
-  var parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
+  var result = parsePriceInput(value);
+  return result.value || 0;
+}
+
+function parsePriceInput(value) {
+  var raw = String(value || '').trim();
+  if (!raw) {
+    return { value: null, empty: true, invalid: false };
+  }
+
+  var normalized = raw
+    .toLowerCase()
+    .replace(/\u00a0/g, ' ')
+    .replace(/kwacha|zmw|per\s+month|\/\s*month|monthly/g, ' ')
+    .trim();
+
+  // Treat a leading K as the Kwacha symbol, while preserving suffixes like 250k.
+  normalized = normalized.replace(/^k\s*(?=\d)/i, '');
+
+  var multiplier = 1;
+  if (/\b(billion|bn)\b|\d\s*b\b/.test(normalized)) {
+    multiplier = 1000000000;
+  } else if (/\b(million|mil)\b|\d\s*m\b/.test(normalized)) {
+    multiplier = 1000000;
+  } else if (/\b(thousand)\b|\d\s*k\b/.test(normalized)) {
+    multiplier = 1000;
+  }
+
+  var numericText = normalized
+    .replace(/\b(billion|million|thousand|mil|bn)\b/g, ' ')
+    .replace(/(\d)\s*[mbk]\b/g, '$1 ')
+    .replace(/[^\d.,-]/g, '')
+    .replace(/,/g, '')
+    .trim();
+  var numberMatch = numericText.match(/-?\d+(?:\.\d+)?/);
+
+  if (!numberMatch) {
+    return { value: null, empty: false, invalid: true };
+  }
+
+  var parsed = Number(numberMatch[0]) * multiplier;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return { value: null, empty: false, invalid: true };
+  }
+
+  return {
+    value: Math.round(parsed * 100) / 100,
+    empty: false,
+    invalid: false
+  };
 }
 
 function parseAmenities(value) {
@@ -742,7 +789,8 @@ async function loadPropertyModuleData() {
 function getPropertyPayloadFromForm() {
   var title = document.getElementById('fTitle').value.trim();
   var referenceNumber = document.getElementById('fRef').value.trim();
-  var price = parsePrice(document.getElementById('fPrice').value);
+  var priceInput = document.getElementById('fPrice');
+  var priceResult = parsePriceInput(priceInput.value);
   var purpose = document.getElementById('fPurpose').value;
   var propertyType = document.getElementById('fType').value;
   var branchId = getCurrentBranchIdForWrite(document.getElementById('fBranch').value);
@@ -751,7 +799,15 @@ function getPropertyPayloadFromForm() {
 
   if (!title) throw new Error('Property title is required.');
   if (!referenceNumber) throw new Error('Reference number is required.');
-  if (!price) throw new Error('Price is required.');
+  if (priceResult.empty) {
+    priceInput.classList.add('error');
+    throw new Error('Price is required.');
+  }
+  if (priceResult.invalid) {
+    priceInput.classList.add('error');
+    throw new Error('Please enter a valid price.');
+  }
+  priceInput.classList.remove('error');
   if (!purpose) throw new Error('Purpose is required.');
   if (!propertyType) throw new Error('Property type is required.');
   if (!branchId) throw new Error('Branch is required.');
@@ -762,7 +818,7 @@ function getPropertyPayloadFromForm() {
     reference_number: referenceNumber,
     title: title,
     description: document.getElementById('fDesc').value.trim() || null,
-    price: price,
+    price: priceResult.value,
     purpose: purpose,
     property_type: propertyType,
     branch_id: branchId,
@@ -863,7 +919,9 @@ async function insertPropertyDocumentMetadata(payload) {
 async function uploadPropertyImages(propertyId, property) {
   if (!stagedImages.length) return;
   if (!propertyId) throw new Error('A property id is required before uploading images.');
-  if (!requireMediaUploadPermission(property)) return;
+  if (!canManageProperty(property)) {
+    throw new Error('You do not have permission to upload media for this property.');
+  }
 
   showToast('Uploading property images...', 'success');
 
@@ -892,6 +950,10 @@ async function uploadPropertyImages(propertyId, property) {
       .from(IMAGE_BUCKET)
       .getPublicUrl(path);
 
+    if (!publicUrlResult.data || !publicUrlResult.data.publicUrl) {
+      throw new Error('Image uploaded, but a public URL could not be created for ' + file.name + '.');
+    }
+
     await insertPropertyImageMetadata({
       property_id: propertyId,
       image_url: publicUrlResult.data.publicUrl,
@@ -905,7 +967,9 @@ async function uploadPropertyDocuments(propertyId, property) {
   var uploads = getSelectedDocumentUploads();
   if (!uploads.length) return;
   if (!propertyId) throw new Error('A property id is required before uploading documents.');
-  if (!requireMediaUploadPermission(property)) return;
+  if (!canManageProperty(property)) {
+    throw new Error('You do not have permission to upload media for this property.');
+  }
 
   showToast('Uploading property documents...', 'success');
 

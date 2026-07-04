@@ -2586,6 +2586,8 @@ document.addEventListener('DOMContentLoaded', function () {
   initMobileNavigation();
   initHeaderBehavior();
   initSmoothScroll();
+  initTeamHoldTrigger();
+  initPremiumEnquiryForm();
   bindEvents();
   if (byId('listingsGrid')) {
     loadListingsData();
@@ -2595,3 +2597,438 @@ document.addEventListener('DOMContentLoaded', function () {
     loadSharedPublicData();
   }
 });
+
+/* ============================================================
+   TEAM HOLD TRIGGER FUNCTIONALITY
+   ============================================================ */
+
+// Temporary hardcoded default team members as last-resort fallback
+var tempTeamMembers = [
+  {
+    id: 1,
+    name: "Mwansa Kaunda",
+    role: "Managing Director & Principal Broker",
+    branch: "Lusaka",
+    bio: "Over 12 years of real estate experience in Zambia. Specialist in commercial valuations and high-end residential acquisitions.",
+    phone: "+260 97 789 0123",
+    whatsapp: "https://wa.me/260977890123",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&h=400&q=80"
+  },
+  {
+    id: 2,
+    name: "Daliso Mumba",
+    role: "Senior Leasing Agent",
+    branch: "Lusaka",
+    bio: "Focused on residential renting and landlord coordination in Kabulonga, Woodlands, and Roma areas.",
+    phone: "+260 96 456 7890",
+    whatsapp: "https://wa.me/260964567890",
+    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&h=400&q=80"
+  },
+  {
+    id: 3,
+    name: "Sibongile Phiri",
+    role: "Livingstone Branch Manager",
+    branch: "Livingstone",
+    bio: "Managing tourist-capital properties, lodges, land listings, and guiding international clients.",
+    phone: "+260 95 321 6549",
+    whatsapp: "https://wa.me/260953216549",
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&h=400&q=80"
+  }
+];
+
+function initTeamHoldTrigger() {
+  var triggerSection = byId('teamTriggerSection');
+  var holdTrigger = byId('teamHoldTrigger');
+  var progressCircle = byId('teamProgressCircle');
+  var triggerText = byId('teamTriggerText');
+  var teamOverlay = byId('teamOverlay');
+  var teamOverlayClose = byId('teamOverlayClose');
+
+  if (!triggerSection || !holdTrigger || !progressCircle || !triggerText) {
+    return;
+  }
+
+  // Pre-load active team members from Supabase database
+  var activeTeamMembers = [];
+  var db = window.hilltopSupabase;
+
+  async function fetchTeamFromSupabase() {
+    if (!db) {
+      console.warn("Supabase client not loaded yet or unavailable.");
+      return;
+    }
+    try {
+      var { data, error } = await db
+        .from('team_members')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        activeTeamMembers = data.map(function(m) {
+          return {
+            id: m.id,
+            fullName: m.full_name,
+            role: m.role,
+            branch: m.branch,
+            phone: m.phone,
+            whatsapp: m.whatsapp,
+            bio: m.bio,
+            image: m.image_url
+          };
+        });
+      }
+    } catch (e) {
+      console.error("Failed to load active team members from Supabase, using fallback", e);
+    }
+  }
+
+  // Initial fetch trigger
+  fetchTeamFromSupabase();
+
+  // 1. Scroll detection using IntersectionObserver
+  var observerOptions = {
+    root: null,
+    rootMargin: '0px 0px 50px 0px',
+    threshold: 0.15
+  };
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        triggerSection.classList.add('is-visible');
+        // Refresh fetch when the section is scrolled into view
+        fetchTeamFromSupabase();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  observer.observe(triggerSection);
+
+  // 2. Hold Logic Constants & Variables
+  var HOLD_DURATION = 1500; // 1.5 seconds hold required
+  var CIRCUMFERENCE = 213.628; // 2 * Math.PI * 34
+  var holdTimer = null;
+  var animationFrame = null;
+  var startTime = null;
+  var isHolding = false;
+  var isComplete = false;
+
+  // Set initial stroke states
+  progressCircle.style.strokeDasharray = CIRCUMFERENCE;
+  progressCircle.style.strokeDashoffset = CIRCUMFERENCE;
+
+  function updateProgress() {
+    if (!isHolding || isComplete) return;
+
+    var elapsed = Date.now() - startTime;
+    var progress = Math.min(elapsed / HOLD_DURATION, 1);
+    var offset = CIRCUMFERENCE * (1 - progress);
+    progressCircle.style.strokeDashoffset = offset;
+
+    if (progress >= 1) {
+      completeHold();
+    } else {
+      animationFrame = requestAnimationFrame(updateProgress);
+    }
+  }
+
+  function startHold(e) {
+    if (isComplete) return;
+
+    // Prevent context menu/selection defaults on touch
+    if (e && e.type === 'pointerdown' && e.pointerType === 'touch') {
+      e.preventDefault();
+    }
+
+    isHolding = true;
+    startTime = Date.now();
+    holdTrigger.classList.add('is-active');
+    triggerText.textContent = "Hold to meet the team";
+
+    // Clear any previous frame loop
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    animationFrame = requestAnimationFrame(updateProgress);
+  }
+
+  function cancelHold() {
+    if (isComplete) return;
+
+    isHolding = false;
+    holdTrigger.classList.remove('is-active');
+
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    progressCircle.style.strokeDashoffset = CIRCUMFERENCE;
+    triggerText.textContent = "Hold to meet the team";
+  }
+
+  function renderTeamOverlayGrid() {
+    var grid = byId('teamOverlayGrid');
+    if (!grid) return;
+
+    var listToRender = [];
+
+    // 1. Primary: Use pre-loaded active members from Supabase
+    if (activeTeamMembers && activeTeamMembers.length > 0) {
+      listToRender = activeTeamMembers;
+    } else {
+      // 2. Secondary fallback: Local storage cache
+      var localTeam = null;
+      try {
+        localTeam = localStorage.getItem('hilltop_team_members');
+      } catch (e) {}
+
+      if (localTeam) {
+        try {
+          var parsed = JSON.parse(localTeam);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            listToRender = parsed.filter(function (m) {
+              return m.isActive === true || m.isActive === 'true';
+            });
+            listToRender.sort(function (a, b) {
+              return (Number(a.displayOrder) || 0) - (Number(b.displayOrder) || 0);
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 3. Last-resort fallback: hardcoded defaults
+    if (listToRender.length === 0) {
+      listToRender = tempTeamMembers;
+    }
+
+    grid.innerHTML = listToRender.map(function (member) {
+      var displayName = member.fullName || member.name || '';
+      var imgPath = member.image || 'assets/avatar-placeholder.png';
+      
+      // Clean phone for tel: link
+      var cleanPhone = (member.phone || '').replace(/[^+\d]/g, '');
+      var phoneLink = 'tel:' + cleanPhone;
+
+      // Clean whatsapp link
+      var rawWa = member.whatsapp || member.phone || '';
+      var waLink = rawWa;
+      if (rawWa && !rawWa.startsWith('http') && !rawWa.startsWith('https')) {
+        var cleanWa = rawWa.replace(/[^+\d]/g, '');
+        if (cleanWa.startsWith('+')) {
+          cleanWa = cleanWa.substring(1);
+        }
+        waLink = 'https://wa.me/' + cleanWa;
+      }
+
+      return (
+        '<article class="team-card">' +
+          '<div class="team-card-image-wrapper">' +
+            '<img src="' + escapeHtml(imgPath) + '" alt="' + escapeHtml(displayName) + '" loading="lazy" onerror="this.src=\'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&h=400&q=80\'" />' +
+          '</div>' +
+          '<div class="team-card-info">' +
+            '<span class="team-card-branch-badge">' + escapeHtml(member.branch) + ' Branch</span>' +
+            '<h3 class="team-card-name">' + escapeHtml(displayName) + '</h3>' +
+            '<p class="team-card-role">' + escapeHtml(member.role) + '</p>' +
+            '<p class="team-card-bio">' + escapeHtml(member.bio) + '</p>' +
+            '<div class="team-card-actions">' +
+              '<a href="' + escapeHtml(phoneLink) + '" class="team-card-btn team-card-btn--call" aria-label="Call ' + escapeHtml(displayName) + '">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">' +
+                  '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />' +
+                '</svg>' +
+                'Call' +
+              '</a>' +
+              '<a href="' + escapeHtml(waLink) + '" target="_blank" rel="noopener" class="team-card-btn team-card-btn--whatsapp" aria-label="WhatsApp ' + escapeHtml(displayName) + '">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">' +
+                  '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />' +
+                '</svg>' +
+                'WhatsApp' +
+              '</a>' +
+            '</div>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  function openTeamOverlay() {
+    if (!teamOverlay) return;
+    renderTeamOverlayGrid();
+    teamOverlay.classList.add('open');
+    document.body.classList.add('team-open');
+    teamOverlay.setAttribute('aria-hidden', 'false');
+    if (teamOverlayClose) teamOverlayClose.focus();
+  }
+
+  function closeTeamOverlay() {
+    if (!teamOverlay) return;
+    teamOverlay.classList.remove('open');
+    document.body.classList.remove('team-open');
+    teamOverlay.setAttribute('aria-hidden', 'true');
+
+    // Reset hold trigger state completely
+    isComplete = false;
+    holdTrigger.classList.remove('is-complete');
+    progressCircle.style.strokeDashoffset = CIRCUMFERENCE;
+    triggerText.textContent = "Hold to meet the team";
+  }
+
+  function completeHold() {
+    isComplete = true;
+    isHolding = false;
+
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    progressCircle.style.strokeDashoffset = 0;
+    holdTrigger.classList.remove('is-active');
+    holdTrigger.classList.add('is-complete');
+    triggerText.textContent = "Opening team...";
+
+    // Log action placeholder
+    console.log("Team experience will open here");
+
+    // Smoothly transition open overlay after a short delay
+    setTimeout(openTeamOverlay, 600);
+  }
+
+  // 3. Pointer Event Listeners (Desktop, Mobile, Tablet)
+  holdTrigger.addEventListener('pointerdown', startHold);
+  holdTrigger.addEventListener('pointerup', cancelHold);
+  holdTrigger.addEventListener('pointerleave', cancelHold);
+  holdTrigger.addEventListener('pointercancel', cancelHold);
+
+  // 4. Keyboard Accessibility
+  holdTrigger.addEventListener('keydown', function (e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault(); // Prevent spacebar page scrolling
+      if (!isHolding) {
+        startHold();
+      }
+    }
+  });
+
+  holdTrigger.addEventListener('keyup', function (e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      cancelHold();
+    }
+  });
+
+  holdTrigger.addEventListener('blur', cancelHold);
+
+  // 5. Close trigger click handler
+  if (teamOverlayClose) {
+    teamOverlayClose.addEventListener('click', closeTeamOverlay);
+  }
+
+  // 6. Escape key listener to close overlay
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && teamOverlay && teamOverlay.classList.contains('open')) {
+      closeTeamOverlay();
+    }
+  });
+}
+
+/* ============================================================
+   PREMIUM CONTACT FORM & DIRECTORY HANDLERS
+   ============================================================ */
+
+function initPremiumEnquiryForm() {
+  var form = byId('premiumEnquiryForm');
+  if (!form) return;
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var nameField = byId('premiumName');
+    var phoneField = byId('premiumPhone');
+    var emailField = byId('premiumEmail');
+    var enquiryTypeField = byId('premiumEnquiryType');
+    var branchField = byId('premiumBranch');
+    var messageField = byId('premiumMessage');
+    var statusMessage = byId('premiumFormStatus');
+    var whatsappContainer = byId('premiumWhatsappContainer');
+    var whatsappBtn = byId('premiumWhatsappBtn');
+
+    if (!nameField || !phoneField || !messageField || !statusMessage) return;
+
+    var nameVal = nameField.value.trim();
+    var phoneVal = phoneField.value.trim();
+    var emailVal = emailField ? emailField.value.trim() : '';
+    var enquiryTypeVal = enquiryTypeField ? enquiryTypeField.value : 'General Enquiry';
+    var branchVal = branchField ? branchField.value : 'Head Office';
+    var messageVal = messageField.value.trim();
+
+    var isValid = true;
+
+    // Reset errors
+    resetPremiumFormErrors();
+
+    if (!nameVal) {
+      showPremiumFormError('premiumName', 'Full Name is required.');
+      isValid = false;
+    }
+    if (!phoneVal) {
+      showPremiumFormError('premiumPhone', 'Phone Number is required.');
+      isValid = false;
+    }
+    if (!messageVal) {
+      showPremiumFormError('premiumMessage', 'Message / Questions is required.');
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    // Success state
+    statusMessage.className = 'form-status-message success';
+    statusMessage.textContent = 'Thank you. Your message has been prepared.';
+
+    // Construct a WhatsApp message URL
+    var textMessage = 'Hello Hilltop Properties, my name is ' + nameVal + '.\n' +
+                      'Enquiry Type: ' + enquiryTypeVal + '\n' +
+                      'Preferred Branch: ' + branchVal + '\n' +
+                      'Phone: ' + phoneVal + '\n' +
+                      (emailVal ? 'Email: ' + emailVal + '\n' : '') +
+                      'Message: ' + messageVal;
+
+    var waUrl = 'https://wa.me/260211000001?text=' + encodeURIComponent(textMessage);
+    if (whatsappBtn && whatsappContainer) {
+      whatsappBtn.href = waUrl;
+      whatsappContainer.classList.remove('hidden');
+    }
+
+    // TODO: Connect this form to Supabase backend or real email API later.
+    console.info("Premium enquiry form message prepared:", {
+      name: nameVal,
+      phone: phoneVal,
+      email: emailVal,
+      enquiryType: enquiryTypeVal,
+      branch: branchVal,
+      message: messageVal
+    });
+
+    // Reset fields
+    form.reset();
+  });
+}
+
+function showPremiumFormError(fieldId, message) {
+  var input = byId(fieldId);
+  var errSpan = byId('err_' + fieldId);
+  if (input) input.classList.add('invalid');
+  if (errSpan) errSpan.textContent = message;
+}
+
+function resetPremiumFormErrors() {
+  var fields = ['premiumName', 'premiumPhone', 'premiumMessage'];
+  fields.forEach(function (f) {
+    var input = byId(f);
+    var errSpan = byId('err_' + f);
+    if (input) input.classList.remove('invalid');
+    if (errSpan) errSpan.textContent = '';
+  });
+  var statusMessage = byId('premiumFormStatus');
+  if (statusMessage) {
+    statusMessage.className = 'form-status-message';
+    statusMessage.textContent = '';
+  }
+}
+
+

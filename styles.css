@@ -129,6 +129,21 @@ svg { display: block; }
   text-decoration: none;
 }
 
+.nav-link,
+.nav-link:link,
+.nav-link:visited,
+.nav-link:hover,
+.nav-link:active,
+.nav-link:focus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-decoration: none !important;
+  color: inherit !important;
+  outline: none;
+}
+
 .nav-item:hover {
   color: rgba(255,255,255,0.85);
   background: rgba(255,255,255,0.05);

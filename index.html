@@ -425,15 +425,110 @@
       <button class="testimonial-nav testimonial-nav--next" type="button" data-testimonial-next aria-label="Next testimonial">›</button>
     </section>
 
-    <section class="section contact-section" id="contact">
-      <div>
-        <p class="eyebrow">Contact</p>
-        <h2>Speak With Hilltop Properties</h2>
-        <p id="contactIntro">Contact our team for property viewings, valuations, sales, and rentals.</p>
-        <button class="btn primary contact-enquiry-btn" type="button" id="generalEnquiryButton">Send General
-          Enquiry</button>
+    <section class="contact-section" id="contact">
+      <div class="contact-container">
+        
+        <!-- Heading Block -->
+        <div class="contact-header">
+          <p class="contact-eyebrow">CONTACT</p>
+          <h2 class="contact-title">Your Property Journey Starts Here</h2>
+          <p class="contact-subtitle">Send us a message and our team will assist you with property viewings, valuations, sales, and rentals.</p>
+        </div>
+
+        <div class="contact-content-grid">
+          <!-- Left Column: The Form -->
+          <div class="contact-form-column">
+            <form class="premium-enquiry-form" id="premiumEnquiryForm" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="premiumName">Full Name *</label>
+                  <input type="text" id="premiumName" required placeholder="Enter your full name" />
+                  <span class="form-error" id="err_premiumName"></span>
+                </div>
+                <div class="form-group">
+                  <label for="premiumPhone">Phone Number *</label>
+                  <input type="tel" id="premiumPhone" required placeholder="Enter your phone number" />
+                  <span class="form-error" id="err_premiumPhone"></span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="premiumEmail">Email Address</label>
+                  <input type="email" id="premiumEmail" placeholder="Enter your email address" />
+                  <span class="form-error" id="err_premiumEmail"></span>
+                </div>
+                <div class="form-group">
+                  <label for="premiumEnquiryType">Enquiry Type</label>
+                  <select id="premiumEnquiryType">
+                    <option value="General Enquiry">General Enquiry</option>
+                    <option value="Buy Property">Buy Property</option>
+                    <option value="Rent Property">Rent Property</option>
+                    <option value="Sell Property">Sell Property</option>
+                    <option value="Valuation">Valuation</option>
+                    <option value="Property Viewing">Property Viewing</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label for="premiumBranch">Preferred Branch</label>
+                  <select id="premiumBranch">
+                    <option value="Head Office">Head Office</option>
+                    <option value="Lusaka Branch">Lusaka Branch</option>
+                    <option value="Livingstone Branch">Livingstone Branch</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="premiumMessage">Message / Questions *</label>
+                <textarea id="premiumMessage" rows="5" required placeholder="Write your message or questions here"></textarea>
+                <span class="form-error" id="err_premiumMessage"></span>
+              </div>
+
+              <div class="form-status-message" id="premiumFormStatus" role="status" aria-live="polite"></div>
+              
+              <!-- WhatsApp fallback link -->
+              <div class="whatsapp-link-container hidden" id="premiumWhatsappContainer">
+                <a class="premium-whatsapp-btn" id="premiumWhatsappBtn" href="#" target="_blank" rel="noopener">
+                  Continue on WhatsApp
+                </a>
+              </div>
+
+              <button class="btn-premium-submit" type="submit">Send Message</button>
+            </form>
+          </div>
+
+          <!-- Right Column: The Directory -->
+          <div class="contact-directory-column">
+            <h3 class="directory-heading">OUR DIRECTORY</h3>
+            
+            <div class="directory-list">
+              <div class="directory-item">
+                <span class="directory-item-title">HEAD OFFICE</span>
+                <p class="dir-address">Kabulonga, Lusaka, Zambia</p>
+                <p class="dir-contact"><a href="tel:+260211000001">+260 211 000 001</a></p>
+                <p class="dir-contact"><a href="mailto:admin@hilltopproperties.co.zm">admin@hilltopproperties.co.zm</a></p>
+              </div>
+
+              <div class="directory-item">
+                <span class="directory-item-title">LUSAKA BRANCH</span>
+                <p class="dir-address">Kabulonga, Lusaka, Zambia</p>
+                <p class="dir-contact"><a href="tel:+260211000001">+260 211 000 001</a></p>
+              </div>
+
+              <div class="directory-item">
+                <span class="directory-item-title">LIVINGSTONE BRANCH</span>
+                <p class="dir-address">Mosi-oa-Tunya Road, Livingstone, Zambia</p>
+                <p class="dir-contact"><a href="tel:+260213000002">+260 213 000 002</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <div class="contact-grid" id="contactGrid"></div>
     </section>
   </main>
 
@@ -487,22 +582,117 @@
     </div>
   </div>
 
-  <footer class="site-footer">
-    <div>
-      <strong>Hilltop Properties Zambia</strong>
-      <p>&copy; <span id="year"></span> Professional real estate support across Lusaka and Livingstone.</p>
+  <!-- Team Hold Trigger Section -->
+  <div class="team-trigger-container" id="teamTriggerSection">
+    <div class="team-hold-trigger" id="teamHoldTrigger" role="button" aria-label="Hold to meet the team" tabindex="0">
+      <svg class="team-progress-ring" width="80" height="80">
+        <circle class="team-progress-ring__circle-bg" cx="40" cy="40" r="34" stroke-width="4" />
+        <circle class="team-progress-ring__circle" cx="40" cy="40" r="34" stroke-width="4" id="teamProgressCircle" />
+      </svg>
+      <div class="team-hold-button">
+        <svg class="team-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </div>
     </div>
-    <nav class="footer-links" aria-label="Footer navigation">
-      <a href="listings.html">Listings</a>
-      <a href="services.html">Services</a>
-      <a href="#contact">Contact</a>
-      <a href="login.html">Admin Login</a>
-    </nav>
+    <p class="team-trigger-text" id="teamTriggerText">Hold to meet the team</p>
+  </div>
+
+  <footer class="site-footer-premium">
+    <!-- Top Footer: Brand, Contact, Links & Actions -->
+    <div class="footer-top-section">
+      <div class="footer-container">
+        
+        <!-- Brand Block -->
+        <div class="footer-brand-block">
+          <span class="footer-wordmark">HILLTOP</span>
+          <span class="footer-tagline">Verified Properties. Trusted Guidance.</span>
+          <div class="footer-brand-accent-line"></div>
+        </div>
+
+        <!-- Contact Directory Block -->
+        <div class="footer-contact-block">
+          <div class="footer-contact-item">
+            <span class="footer-label">EMAIL</span>
+            <p><a href="mailto:admin@hilltopproperties.co.zm">admin@hilltopproperties.co.zm</a></p>
+          </div>
+          <div class="footer-contact-item">
+            <span class="footer-label">HEAD OFFICE</span>
+            <p>Kabulonga, Lusaka, Zambia</p>
+            <p><a href="tel:+260211000001">+260 211 000 001</a></p>
+          </div>
+          <div class="footer-contact-item">
+            <span class="footer-label">BRANCHES</span>
+            <p><strong>Lusaka:</strong> Kabulonga, Lusaka, Zambia</p>
+            <p><strong>Livingstone:</strong> Mosi-oa-Tunya Road, Livingstone, Zambia (+260 213 000 002)</p>
+          </div>
+        </div>
+
+        <!-- Thin Divider line -->
+        <hr class="footer-divider" />
+
+        <!-- Navigation & Actions Block -->
+        <div class="footer-nav-block">
+          <div class="footer-quick-links">
+            <a href="#hero">Home</a>
+            <a href="listings.html">Listings</a>
+            <a href="services.html">Services</a>
+            <a href="#why-choose-us">Why Hilltop</a>
+            <a href="about.html">About</a>
+            <a href="#contact">Contact</a>
+          </div>
+
+          <div class="footer-actions">
+            <a href="#contact" class="footer-action-btn footer-action-btn--primary">Send Enquiry</a>
+            <a href="listings.html" class="footer-action-btn footer-action-btn--outline">View Listings</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom Footer: Legal Info -->
+    <div class="footer-bottom-bar">
+      <div class="footer-container bottom-flex">
+        <p>&copy; 2026 Hilltop Properties Zambia. All rights reserved. | ZIEA No. 348</p>
+        <div class="footer-bottom-links">
+          <a href="login.html">Admin Login</a>
+        </div>
+      </div>
+    </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="website.js"></script>
+  <!-- Full-Screen Team Overlay -->
+  <div class="team-overlay" id="teamOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="teamOverlayTitle">
+    <div class="team-overlay-content">
+      <button class="team-overlay-close" type="button" id="teamOverlayClose" aria-label="Close team section">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" />
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" />
+        </svg>
+        Close
+      </button>
+      
+      <div class="team-overlay-heading">
+        <p class="eyebrow">Hilltop Properties Zambia</p>
+        <h2 id="teamOverlayTitle">Meet the Hilltop Team</h2>
+        <p class="team-overlay-subtitle">
+          Our trusted agents and local experts are here to help you find, rent, or sell verified properties across Zambia.
+        </p>
+      </div>
+
+      <div class="team-overlay-grid" id="teamOverlayGrid">
+        <!-- Dynamically rendered team member cards -->
+      </div>
+    </div>
+  </div>
+
 </body>
 
 </html>
