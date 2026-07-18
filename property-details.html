@@ -7,7 +7,8 @@
   <title>Property Details | Hilltop Properties Zambia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/fonts/proda-sans-medium/proda-sans-medium.css" />
   <link rel="stylesheet" href="website.css" />
   <link rel="stylesheet" href="property-details.css" />
 </head>
@@ -52,7 +53,7 @@
           <h1 id="propertyTitle">Property Details</h1>
           <span class="badge" id="propertyStatus">Active</span>
         </div>
-        <p class="details-price" id="propertyPrice">ZMW 0</p>
+        <p class="details-price" id="propertyPrice" aria-live="polite">Loading price…</p>
         <div class="details-tags">
           <span id="propertyPurpose">Purpose</span>
           <span id="propertyType">Type</span>
@@ -147,6 +148,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="currency.js"></script>
   <script src="property-details.js"></script>
 </body>
 </html>

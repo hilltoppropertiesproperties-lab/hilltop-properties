@@ -15,8 +15,8 @@ var detailsState = {
 var enquirySubmitting = false;
 
 var fallbackContact = {
-  phone: '+260 211 000 001',
-  email: 'admin@hilltopproperties.co.zm',
+  phone: '+260 979 972019',
+  email: 'PROBRYMALYANGO@GMAIL.COM',
   address: 'Kabulonga, Lusaka, Zambia'
 };
 
@@ -34,12 +34,13 @@ function escapeHtml(value) {
   });
 }
 
-function formatPrice(price, purpose) {
-  var amount = Number(price || 0);
-  var formatted = 'ZMW ' + amount.toLocaleString('en-ZM', {
-    maximumFractionDigits: amount % 1 === 0 ? 0 : 2
-  });
-  return purpose === 'For Rent' ? formatted + ' / month' : formatted;
+function formatPrice(price, purpose, currencyCode, billingPeriod) {
+  return window.HilltopCurrency.formatPropertyPrice(
+    price,
+    currencyCode,
+    purpose,
+    billingPeriod
+  );
 }
 
 function showStatus(message, type) {
@@ -138,7 +139,7 @@ async function loadPropertyDetails() {
 
   var propertyQuery = supabase
     .from('properties')
-    .select('id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, virtual_tour_link, youtube_link, branch_id, created_at')
+    .select('id, reference_number, title, description, price, currency_code, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, virtual_tour_link, youtube_link, branch_id, created_at')
     .in('status', ['Active', 'Under Offer'])
     .limit(1);
 
@@ -186,7 +187,7 @@ async function loadPropertyDetails() {
     safeSelect('similar property candidates', function () {
       return supabase
         .from('properties')
-        .select('id, reference_number, title, price, purpose, property_type, area, status, branch_id, created_at')
+        .select('id, reference_number, title, price, currency_code, purpose, property_type, area, status, branch_id, created_at')
         .in('status', ['Active', 'Under Offer'])
         .neq('id', detailsState.property.id)
         .order('created_at', { ascending: false })
@@ -444,7 +445,7 @@ function renderSimilar() {
       '</div>',
       '</div>',
       '<div class="property-card-body">',
-      '<div class="property-card-price">' + formatPrice(property.price, property.purpose) + '</div>',
+      '<div class="property-card-price">' + formatPrice(property.price, property.purpose, property.currency_code, property.billing_period) + '</div>',
       '<p class="property-card-location">' + escapeHtml(location) + ' &middot; ' + escapeHtml(property.property_type) + '</p>',
       specsHtml,
       '<div class="property-card-actions">',
@@ -474,7 +475,7 @@ function renderDetails() {
   byId('propertyTitle').textContent = property.title;
   byId('propertyStatus').textContent = property.status;
   byId('propertyStatus').className = statusClass;
-  byId('propertyPrice').textContent = formatPrice(property.price, property.purpose);
+  byId('propertyPrice').textContent = formatPrice(property.price, property.purpose, property.currency_code, property.billing_period);
   byId('propertyPurpose').textContent = property.purpose;
   byId('propertyType').textContent = property.property_type;
   byId('propertyArea').textContent = property.area || 'Zambia';

@@ -13,8 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
     rel="stylesheet" />
+  <link rel="stylesheet" href="assets/fonts/proda-sans-medium/proda-sans-medium.css" />
+  <link rel="stylesheet" href="assets/fonts/concise-regular-demo/concise-regular-demo.css" />
   <link rel="stylesheet" href="website.css" />
 </head>
 
@@ -125,8 +127,7 @@
       </div>
     </section>
 
-    <section class="featured-services-scroll-stage">
-      <section class="featured-properties-section featured-pin-layer" id="featured">
+      <section class="featured-properties-section" id="featured">
         <div class="featured-properties-container">
           <div class="featured-properties-header">
             <div>
@@ -138,6 +139,31 @@
           </div>
           <div class="featured-properties-grid" id="featuredGrid"></div>
           <div class="empty-state" id="featuredEmpty">No featured properties are listed yet.</div>
+
+          <section class="more-properties-strip" id="morePropertiesSection" aria-labelledby="morePropertiesTitle" hidden>
+            <div class="more-properties-strip__header">
+              <div class="more-properties-strip__copy">
+                <p class="more-properties-strip__label">EXPLORE MORE</p>
+                <h3 id="morePropertiesTitle">More Properties To Discover</h3>
+                <p>Browse more available homes, apartments, land, and commercial opportunities.</p>
+              </div>
+              <div class="more-properties-strip__controls" aria-label="More property navigation">
+                <button class="more-properties-strip__arrow" id="morePropertiesPrev" type="button" aria-label="View previous property" disabled>
+                  <span aria-hidden="true">&#8592;</span>
+                </button>
+                <button class="more-properties-strip__arrow" id="morePropertiesNext" type="button" aria-label="View next property" disabled>
+                  <span aria-hidden="true">&#8594;</span>
+                </button>
+              </div>
+            </div>
+            <div class="more-properties-strip__viewport">
+              <div class="more-properties-strip__track" id="morePropertiesTrack" aria-live="polite"></div>
+            </div>
+            <div class="more-properties-strip__progress" aria-hidden="true">
+              <span id="morePropertiesProgress"></span>
+            </div>
+          </section>
+
           <div class="featured-properties-action">
             <a class="btn primary view-more-btn" href="listings.html">
               <span>View More Properties</span>
@@ -150,113 +176,44 @@
         </div>
       </section>
 
-      <section class="section services-section services-cover-layer" id="services">
-        <div class="section-heading">
-          <p class="eyebrow">WHAT WE DO</p>
-          <h2>Real Estate Services</h2>
-          <p class="section-subheading">
-            From verified listings to client enquiries and branch support, Hilltop Properties Zambia helps buyers,
-            tenants, sellers, and landlords move with confidence.
-          </p>
-        </div>
+      <section class="services-redesign" data-property-services-section>
+        <div class="services-redesign__container">
+          <header class="services-redesign__header">
+            <p class="services-redesign__label">PROPERTY SERVICES</p>
+            <h2 class="services-redesign__title">How Can We Help?</h2>
+            <p class="services-redesign__intro">Whether you are buying, renting, selling, or listing a property, Hilltop Properties Zambia can guide you through the next step.</p>
+          </header>
 
-        <div class="services-showcase-wrapper">
-          <div class="services-showcase-grid">
-            <article class="service-showcase-card" data-service="sales">
-              <div class="service-showcase-media">
-                <div class="visual-card-bg sales-gradient"></div>
-                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80"
-                  alt="Property Sales" class="service-media-image" loading="lazy">
+          <div class="service-choice-grid">
+            <article class="service-choice-card" data-service-card-slug="buy-property">
+              <div class="service-choice-card__visual">
+                <img src="assets/images/service-buy-property.svg" alt="Illustration representing the search for a property to buy" class="service-choice-card__image" />
               </div>
-              <div class="service-showcase-copy">
-                <span class="service-badge">For Buyers & Sellers</span>
-                <h3>Property Sales</h3>
-                <p>Verified sales support for homes, land, and commercial property.</p>
-                <div class="service-tags">
-                  <span class="service-tag">Market Valuation</span>
-                  <span class="service-tag">Verified Listings</span>
-                </div>
-              </div>
+              <h3 class="service-choice-card__title">Buy a Property</h3>
+              <p class="service-choice-card__description">Explore verified houses, apartments, land, and commercial properties available across our operating locations.</p>
+              <a class="service-choice-card__action" href="listings.html?category=all">Explore Properties</a>
             </article>
 
-            <article class="service-showcase-card" data-service="rentals">
-              <div class="service-showcase-media">
-                <div class="visual-card-bg rentals-gradient"></div>
-                <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80"
-                  alt="Property Rentals" class="service-media-image" loading="lazy">
+            <article class="service-choice-card" data-service-card-slug="rent-property">
+              <div class="service-choice-card__visual">
+                <img src="assets/images/service-rent-property.svg" alt="Illustration representing finding and renting a property" class="service-choice-card__image" />
               </div>
-              <div class="service-showcase-copy">
-                <span class="service-badge">For Tenants & Landlords</span>
-                <h3>Property Rentals</h3>
-                <p>Rental matching and viewing support for tenants and landlords.</p>
-                <div class="service-tags">
-                  <span class="service-tag">Tenant Screening</span>
-                  <span class="service-tag">Flexible Terms</span>
-                </div>
-              </div>
+              <h3 class="service-choice-card__title">Rent a Property</h3>
+              <p class="service-choice-card__description">Find houses and apartments available for rent in Lusaka, Livingstone, and other listed locations.</p>
+              <a class="service-choice-card__action" href="listings.html?category=all&amp;purpose=For%20Rent">Explore Rentals</a>
             </article>
 
-            <article
-              class="service-showcase-card service-showcase-card--featured service-showcase-card--case-study is-case-study service-showcase-card--marketing"
-              data-service="marketing">
-              <div class="service-showcase-media service-showcase-media--case-study">
-                <div class="visual-card-bg marketing-gradient"></div>
-                <img src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=1200&q=80"
-                  alt="Property Marketing" class="service-media-image" loading="lazy">
+            <article class="service-choice-card" data-service-card-slug="list-property">
+              <div class="service-choice-card__visual">
+                <img src="assets/images/service-list-property.svg" alt="Illustration representing listing a property for sale or rent" class="service-choice-card__image" />
               </div>
-              <div class="service-showcase-copy">
-                <span class="service-badge">Digital Reach</span>
-                <h3>Property Marketing</h3>
-                <p>Premium property presentation across web and social channels.</p>
-                <div class="service-tags">
-                  <span class="service-tag">High-Quality Media</span>
-                  <span class="service-tag">Targeted Campaigns</span>
-                </div>
-              </div>
+              <h3 class="service-choice-card__title">Sell or List a Property</h3>
+              <p class="service-choice-card__description">List your property with Hilltop and connect with interested buyers or tenants through our branch network.</p>
+              <a class="service-choice-card__action" href="#contact" data-enquiry-type="List a Property">List Your Property</a>
             </article>
-
-            <article class="service-showcase-card" data-service="verification">
-              <div class="service-showcase-media">
-                <div class="visual-card-bg verification-gradient"></div>
-                <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=80"
-                  alt="Property Verification" class="service-media-image" loading="lazy">
-              </div>
-              <div class="service-showcase-copy">
-                <span class="service-badge">Trust & Compliance</span>
-                <h3>Property Verification</h3>
-                <p>Document-aware checks before listings go public.</p>
-                <div class="service-tags">
-                  <span class="service-tag">Title Searches</span>
-                  <span class="service-tag">Physical Inspection</span>
-                </div>
-              </div>
-            </article>
-
-            <article class="service-showcase-card" data-service="support">
-              <div class="service-showcase-media">
-                <div class="visual-card-bg support-gradient"></div>
-                <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80"
-                  alt="Branch Support" class="service-media-image" loading="lazy">
-              </div>
-              <div class="service-showcase-copy">
-                <span class="service-badge">Branch Network</span>
-                <h3>Branch Support</h3>
-                <p>Local teams coordinate viewings, enquiries, and follow-up.</p>
-                <div class="service-tags">
-                  <span class="service-tag">Local Experts</span>
-                  <span class="service-tag">Guided Viewings</span>
-                </div>
-              </div>
-            </article>
-
           </div>
         </div>
-
-        <div class="section-action">
-          <button class="btn primary" type="button" id="serviceEnquiryButton">Ask About Services</button>
-        </div>
       </section>
-    </section>
 
     <section class="why-video-hero" id="why">
       <video class="why-hero-video" id="whyHeroVideo" autoplay muted loop playsinline preload="metadata"
@@ -364,13 +321,40 @@
       </div>
     </section>
 
-    <section class="section" id="team">
-      <div class="section-heading">
-        <p class="eyebrow">People</p>
-        <h2>Meet The Team</h2>
+    <section class="partners-section" id="partners" aria-labelledby="partnersTitle">
+      <div class="partners-container">
+        <header class="partners-header">
+          <div class="partners-heading-group">
+            <p class="partners-eyebrow">TRUSTED NETWORK</p>
+            <h2 class="partners-title" id="partnersTitle">Our Partners</h2>
+          </div>
+          <p class="partners-intro">Working with trusted organisations and service providers to support property owners, buyers, tenants, and investors.</p>
+        </header>
+
+        <div class="partners-grid">
+          <article class="partner-card partner-card--slip" aria-label="Slip Systems Electrical Tech Services">
+            <div class="partner-card__logo-wrap">
+              <img class="partner-card__logo" src="assets/images/partners/slip-systems-electrical-tech-services.jpg" alt="Slip Systems Electrical Tech Services logo" loading="lazy" decoding="async" />
+            </div>
+          </article>
+
+          <article class="partner-card partner-card--smart" aria-label="Smart Fittings and Designs ZM">
+            <div class="partner-card__logo-wrap">
+              <img class="partner-card__logo" src="assets/images/partners/smart-fittings-designs-zm.jpg" alt="Smart Fittings and Designs ZM logo" loading="lazy" decoding="async" />
+            </div>
+          </article>
+
+          <article class="partner-card partner-card--hilltop-construction" aria-label="Hilltop Construction Zambia">
+            <div class="partner-card__logo-wrap">
+              <!-- TODO: replace this unboxed wordmark with the approved Hilltop Construction Zambia logo asset. -->
+              <div class="partner-card__wordmark" role="img" aria-label="Hilltop Construction Zambia wordmark placeholder">
+                <span>HILLTOP</span>
+                <small>CONSTRUCTION ZAMBIA</small>
+              </div>
+            </div>
+          </article>
+        </div>
       </div>
-      <div class="team-grid" id="teamGrid"></div>
-      <div class="empty-state" id="teamEmpty">Team profiles will appear here soon.</div>
     </section>
 
     <section class="testimonial-stage" id="testimonials" tabindex="0" aria-label="Client testimonials carousel">
@@ -431,8 +415,8 @@
         <!-- Heading Block -->
         <div class="contact-header">
           <p class="contact-eyebrow">CONTACT</p>
-          <h2 class="contact-title">Your Property Journey Starts Here</h2>
-          <p class="contact-subtitle">Send us a message and our team will assist you with property viewings, valuations, sales, and rentals.</p>
+          <h2 class="contact-title">Speak With Hilltop Properties</h2>
+          <p class="contact-subtitle">Contact our team for property viewings, valuations, sales, and rentals.</p>
         </div>
 
         <div class="contact-content-grid">
@@ -465,6 +449,7 @@
                     <option value="Buy Property">Buy Property</option>
                     <option value="Rent Property">Rent Property</option>
                     <option value="Sell Property">Sell Property</option>
+                    <option value="List a Property">List a Property</option>
                     <option value="Valuation">Valuation</option>
                     <option value="Property Viewing">Property Viewing</option>
                   </select>
@@ -475,9 +460,9 @@
                 <div class="form-group full-width">
                   <label for="premiumBranch">Preferred Branch</label>
                   <select id="premiumBranch">
-                    <option value="Head Office">Head Office</option>
-                    <option value="Lusaka Branch">Lusaka Branch</option>
-                    <option value="Livingstone Branch">Livingstone Branch</option>
+                    <option value="">Select your preferred branch</option>
+                    <option value="Lusaka">Lusaka</option>
+                    <option value="Livingstone">Livingstone</option>
                   </select>
                 </div>
               </div>
@@ -507,22 +492,22 @@
             
             <div class="directory-list">
               <div class="directory-item">
-                <span class="directory-item-title">HEAD OFFICE</span>
-                <p class="dir-address">Kabulonga, Lusaka, Zambia</p>
-                <p class="dir-contact"><a href="tel:+260211000001">+260 211 000 001</a></p>
-                <p class="dir-contact"><a href="mailto:admin@hilltopproperties.co.zm">admin@hilltopproperties.co.zm</a></p>
+                <span class="directory-item-title">GENERAL ENQUIRIES</span>
+                <p class="dir-contact">Email: <a href="mailto:PROBRYMALYANGO@GMAIL.COM">PROBRYMALYANGO@GMAIL.COM</a></p>
+                <p class="dir-contact">Mobile: <a href="tel:+260979972019">+260 979 972019</a></p>
+                <p class="dir-contact">Office: <a href="tel:+260213322035">+260 213 322 035</a></p>
               </div>
 
               <div class="directory-item">
                 <span class="directory-item-title">LUSAKA BRANCH</span>
                 <p class="dir-address">Kabulonga, Lusaka, Zambia</p>
-                <p class="dir-contact"><a href="tel:+260211000001">+260 211 000 001</a></p>
+                <p class="dir-contact">Phone: <a href="tel:+260979972019">+260 979 972019</a></p>
               </div>
 
               <div class="directory-item">
                 <span class="directory-item-title">LIVINGSTONE BRANCH</span>
                 <p class="dir-address">Mosi-oa-Tunya Road, Livingstone, Zambia</p>
-                <p class="dir-contact"><a href="tel:+260213000002">+260 213 000 002</a></p>
+                <p class="dir-contact">Phone: <a href="tel:+260979328997">+260 979 328 997</a></p>
               </div>
             </div>
           </div>
@@ -573,7 +558,6 @@
         </label>
 
         <div class="enquiry-message" id="enquiryMessage" role="status" aria-live="polite"></div>
-        <!-- TODO: Replace with real Hilltop Properties WhatsApp number -->
         <a class="whatsapp-fallback hidden" id="enquiryWhatsappFallback" href="#" target="_blank" rel="noopener">Contact
           us on WhatsApp</a>
 
@@ -617,17 +601,18 @@
         <div class="footer-contact-block">
           <div class="footer-contact-item">
             <span class="footer-label">EMAIL</span>
-            <p><a href="mailto:admin@hilltopproperties.co.zm">admin@hilltopproperties.co.zm</a></p>
+            <p><a href="mailto:PROBRYMALYANGO@GMAIL.COM">PROBRYMALYANGO@GMAIL.COM</a></p>
           </div>
           <div class="footer-contact-item">
-            <span class="footer-label">HEAD OFFICE</span>
-            <p>Kabulonga, Lusaka, Zambia</p>
-            <p><a href="tel:+260211000001">+260 211 000 001</a></p>
+            <span class="footer-label">MAIN CONTACT</span>
+            <p><a href="tel:+260979972019">+260 979 972019</a></p>
           </div>
           <div class="footer-contact-item">
             <span class="footer-label">BRANCHES</span>
             <p><strong>Lusaka:</strong> Kabulonga, Lusaka, Zambia</p>
-            <p><strong>Livingstone:</strong> Mosi-oa-Tunya Road, Livingstone, Zambia (+260 213 000 002)</p>
+            <p><a href="tel:+260979972019">+260 979 972019</a></p>
+            <p><strong>Livingstone:</strong> Mosi-oa-Tunya Road, Livingstone, Zambia</p>
+            <p><a href="tel:+260979328997">+260 979 328 997</a></p>
           </div>
         </div>
 
@@ -667,6 +652,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="currency.js"></script>
   <script src="website.js"></script>
   <!-- Full-Screen Team Overlay -->
   <div class="team-overlay" id="teamOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="teamOverlayTitle">

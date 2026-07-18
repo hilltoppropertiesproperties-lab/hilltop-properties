@@ -9,9 +9,9 @@ var settingsData = {
     companyName: 'Hilltop Properties Zambia',
     tradingName: 'Hilltop Properties',
     registrationNumber: 'TPIN / PACRA placeholder',
-    mainPhone: '+260 211 000 001',
-    mainWhatsapp: '+260 977 000 001',
-    mainEmail: 'admin@hilltopproperties.co.zm',
+    mainPhone: '+260 213 322 035',
+    mainWhatsapp: '+260 979 972019',
+    mainEmail: 'PROBRYMALYANGO@GMAIL.COM',
     websiteUrl: 'https://hilltopproperties.co.zm',
     businessAddress: 'Kabulonga, Lusaka, Zambia',
     aboutCompany: 'Hilltop Properties Zambia helps clients buy, rent, sell, and manage quality real estate across Lusaka and Livingstone.',
@@ -23,12 +23,12 @@ var settingsData = {
       id: 'lusaka',
       name: 'Lusaka Branch',
       address: 'Kabulonga, Lusaka, Zambia',
-      phone: '+260 211 000 001',
-      whatsapp: '+260 977 000 001',
-      email: 'lusaka@hilltopproperties.co.zm',
+      phone: '+260 979 972019',
+      whatsapp: '+260 979 972019',
+      email: 'PROBRYMALYANGO@GMAIL.COM',
       manager: 'John Phiri',
       hours: 'Mon-Fri, 08:00-17:00',
-      mapLink: 'Google Maps placeholder - Lusaka',
+      mapLink: 'https://www.google.com/maps/search/?api=1&query=Kabulonga%2C%20Lusaka%2C%20Zambia',
       status: 'Active',
       showOnWebsite: true
     },
@@ -36,12 +36,12 @@ var settingsData = {
       id: 'livingstone',
       name: 'Livingstone Branch',
       address: 'Mosi-oa-Tunya Road, Livingstone, Zambia',
-      phone: '+260 213 000 002',
-      whatsapp: '+260 977 000 002',
-      email: 'livingstone@hilltopproperties.co.zm',
+      phone: '+260 979 328 997',
+      whatsapp: '+260 979 328 997',
+      email: 'PROBRYMALYANGO@GMAIL.COM',
       manager: 'David Mwale',
       hours: 'Mon-Fri, 08:00-17:00',
-      mapLink: 'Google Maps placeholder - Livingstone',
+      mapLink: 'https://www.google.com/maps/search/?api=1&query=Mosi-oa-Tunya%20Road%2C%20Livingstone%2C%20Zambia',
       status: 'Active',
       showOnWebsite: true
     }
@@ -65,9 +65,9 @@ var settingsData = {
     properties: ['New property added', 'Property approved', 'Property marked sold/rented', 'Property expiring soon'],
     channels: ['Email', 'WhatsApp placeholder', 'Admin dashboard alert'],
     recipients: {
-      notifyLusaka: 'lusaka@hilltopproperties.co.zm',
-      notifyLivingstone: 'livingstone@hilltopproperties.co.zm',
-      notifyHeadOffice: 'admin@hilltopproperties.co.zm'
+      notifyLusaka: 'PROBRYMALYANGO@GMAIL.COM',
+      notifyLivingstone: 'PROBRYMALYANGO@GMAIL.COM',
+      notifyHeadOffice: 'PROBRYMALYANGO@GMAIL.COM'
     }
   },
   seo: {

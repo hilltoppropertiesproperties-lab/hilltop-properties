@@ -107,8 +107,8 @@
           <span></span><span></span><span></span>
         </button>
         <div class="header-titles">
-          <h1 class="page-title">Property Management</h1>
-          <p class="page-subtitle">Manage property listings for Hilltop Properties Zambia</p>
+          <h1 class="page-title" id="propertyPageTitle">All Properties</h1>
+          <p class="page-subtitle" id="propertyPageSubtitle">Manage all property listings for Hilltop Properties Zambia.</p>
         </div>
       </div>
       <div class="header-right">
@@ -168,6 +168,26 @@
         </div>
       </section>
 
+      <!-- PROPERTY CATEGORY NAVIGATION -->
+      <nav class="property-category-nav" id="propertyCategoryNav" aria-label="Property categories">
+        <button class="property-category-tab active" type="button" data-category="all" aria-pressed="true">
+          <span>All Properties</span>
+          <span class="property-category-count" id="categoryCountAll">0</span>
+        </button>
+        <button class="property-category-tab" type="button" data-category="house" aria-pressed="false">
+          <span>Houses</span>
+          <span class="property-category-count" id="categoryCountHouse">0</span>
+        </button>
+        <button class="property-category-tab" type="button" data-category="apartment" aria-pressed="false">
+          <span>Apartments</span>
+          <span class="property-category-count" id="categoryCountApartment">0</span>
+        </button>
+        <button class="property-category-tab" type="button" data-category="land" aria-pressed="false">
+          <span>Land</span>
+          <span class="property-category-count" id="categoryCountLand">0</span>
+        </button>
+      </nav>
+
       <!-- TOOLBAR: SEARCH + FILTERS + ADD BUTTON -->
       <div class="prop-toolbar">
         <div class="toolbar-left">
@@ -189,6 +209,16 @@
             <option value="all">All Purposes</option>
             <option value="For Sale">For Sale</option>
             <option value="For Rent">For Rent</option>
+          </select>
+          <select id="exclusiveFilter" class="filter-select" aria-label="Exclusive status">
+            <option value="all">All Properties</option>
+            <option value="exclusive">Exclusive Only</option>
+            <option value="not-exclusive">Not Exclusive</option>
+          </select>
+          <select id="currencyFilter" class="filter-select" aria-label="Listing currency">
+            <option value="all">All Currencies</option>
+            <option value="ZMW">ZMW</option>
+            <option value="USD">USD</option>
           </select>
         </div>
         <div class="toolbar-right">
@@ -254,9 +284,18 @@
         <!-- Empty state -->
         <div class="empty-state" id="emptyState" style="display:none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <h3>No properties found</h3>
-          <p>Try adjusting your search or filters, or add a new property.</p>
+          <h3 id="emptyStateTitle">No properties were found.</h3>
+          <p id="emptyStateText">Try adjusting your search or filters, or add a new property.</p>
           <button class="action-btn primary" data-open-property-modal>Add New Property</button>
+        </div>
+
+        <div class="property-pagination" id="propertyPagination" aria-label="Property table pagination">
+          <p class="property-pagination-summary" id="propertyPaginationSummary">Showing 0 properties</p>
+          <div class="property-pagination-actions">
+            <button class="action-btn outline small" type="button" id="propertyPagePrevious">Previous</button>
+            <span class="property-page-indicator" id="propertyPageIndicator">Page 1 of 1</span>
+            <button class="action-btn outline small" type="button" id="propertyPageNext">Next</button>
+          </div>
         </div>
       </section>
 
@@ -305,11 +344,26 @@
               <label for="fRef">Reference Number <span class="req">*</span></label>
               <input type="text" id="fRef" placeholder="e.g. HT-LSK-001" required />
             </div>
-            <div class="form-group half">
-              <label for="fPrice">Price (ZMW) <span class="req">*</span></label>
-              <input type="text" id="fPrice" placeholder="e.g. 450,000" required />
+            <div class="currency-price-fields half">
+              <div class="form-group currency-field">
+                <label for="fCurrency">Currency <span class="req">*</span></label>
+                <select id="fCurrency" required>
+                  <option value="ZMW">ZMW</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+              <div class="form-group price-field">
+                <label for="fPrice">Price <span class="req">*</span></label>
+                <div class="price-input-wrap" id="priceInputWrap" data-currency="ZMW">
+                  <span class="price-input-prefix" id="fPricePrefix" aria-hidden="true">K</span>
+                  <input type="text" id="fPrice" inputmode="decimal" autocomplete="off" placeholder="e.g. 450000" required />
+                </div>
+              </div>
             </div>
           </div>
+          <p class="currency-change-warning" id="currencyChangeWarning" role="status" hidden>
+            Changing the currency does not convert the current price amount. Confirm that the amount entered matches the selected currency.
+          </p>
           <div class="form-row">
             <div class="form-group full">
               <label for="fDesc">Description</label>
@@ -399,6 +453,16 @@
               </select>
             </div>
             <div class="form-group half">
+              <label for="fExclusive">Exclusive Property</label>
+              <select id="fExclusive" aria-describedby="fExclusiveHelp">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+              <p class="form-help" id="fExclusiveHelp">Exclusive properties are displayed in the premium horizontal property showcase on the homepage.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full">
               <label for="fAmenities">Amenities (comma-separated)</label>
               <input type="text" id="fAmenities" placeholder="e.g. Pool, Garden, Security, Borehole" />
             </div>
@@ -579,6 +643,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="auth-guard.js"></script>
+  <script src="currency.js"></script>
   <script src="properties.js"></script>
 </body>
 </html>

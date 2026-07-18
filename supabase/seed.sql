@@ -6,8 +6,8 @@
 
 insert into public.branches (id, name, address, contact_number)
 values
-  ('11111111-1111-1111-1111-111111111111', 'Lusaka', 'Kabulonga, Lusaka, Zambia', '+260 211 000 001'),
-  ('22222222-2222-2222-2222-222222222222', 'Livingstone', 'Mosi-oa-Tunya Road, Livingstone, Zambia', '+260 213 000 002')
+  ('11111111-1111-1111-1111-111111111111', 'Lusaka', 'Kabulonga, Lusaka, Zambia', '+260 979 972019'),
+  ('22222222-2222-2222-2222-222222222222', 'Livingstone', 'Mosi-oa-Tunya Road, Livingstone, Zambia', '+260 979 328 997')
 on conflict (name) do update
 set address = excluded.address,
     contact_number = excluded.contact_number;

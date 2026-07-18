@@ -1,0 +1,37 @@
+[debug] [2026-07-04T11:47:22.856Z] ----------------------------------------------------------------------
+[debug] [2026-07-04T11:47:22.858Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting --project hilltop-properties-zm-b9619
+[debug] [2026-07-04T11:47:22.858Z] CLI Version:   15.22.4
+[debug] [2026-07-04T11:47:22.859Z] Platform:      win32
+[debug] [2026-07-04T11:47:22.859Z] Node Version:  v24.13.1
+[debug] [2026-07-04T11:47:22.859Z] Detected Agent: unknown
+[debug] [2026-07-04T11:47:22.859Z] Time:          Sat Jul 04 2026 13:47:22 GMT+0200 (Central Africa Time)
+[debug] [2026-07-04T11:47:22.859Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-07-04T11:47:25.571Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-07-04T11:47:25.572Z] > authorizing via signed-in user (dalisotongablessings@gmail.com)
+[debug] [2026-07-04T11:47:25.572Z] [iam] checking project hilltop-properties-zm-b9619 for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-07-04T11:47:25.574Z] No OAuth tokens found
+[debug] [2026-07-04T11:47:25.575Z] No OAuth tokens found
+[debug] [2026-07-04T11:47:25.575Z] > refreshing access token with scopes: []
+[debug] [2026-07-04T11:47:25.577Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-07-04T11:47:25.577Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-07-04T11:47:27.765Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-07-04T11:47:27.765Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-07-04T11:47:27.780Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions [none]
+[debug] [2026-07-04T11:47:27.780Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions  x-goog-user-project=hilltop-properties-zm-b9619
+[debug] [2026-07-04T11:47:27.780Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-07-04T11:47:31.308Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions 403
+[debug] [2026-07-04T11:47:31.308Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions {"error":{"code":403,"message":"Caller does not have required permission to use project hilltop-properties-zm-b9619. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=hilltop-properties-zm-b9619 and then retry. Propagation of the new permission may take a few minutes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"USER_PROJECT_DENIED","domain":"googleapis.com","metadata":{"service":"cloudresourcemanager.googleapis.com","consoleUrl":"https://console.developers.google.com/iam-admin/iam?project=hilltop-properties-zm-b9619","containerInfo":"hilltop-properties-zm-b9619","consumer":"projects/hilltop-properties-zm-b9619"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Caller does not have required permission to use project hilltop-properties-zm-b9619. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=hilltop-properties-zm-b9619 and then retry. Propagation of the new permission may take a few minutes."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developer console IAM admin","url":"https://console.developers.google.com/iam-admin/iam?project=hilltop-properties-zm-b9619"}]}]}}
+[debug] [2026-07-04T11:47:31.309Z] [iam] error while checking permissions, command may fail: Request to https://cloudresourcemanager.googleapis.com/v1/projects/hilltop-properties-zm-b9619:testIamPermissions had HTTP Error: 403, Caller does not have required permission to use project hilltop-properties-zm-b9619. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam?project=hilltop-properties-zm-b9619 and then retry. Propagation of the new permission may take a few minutes.
+[debug] [2026-07-04T11:47:31.309Z] Checked if tokens are valid: true, expires at: 1783169246765
+[debug] [2026-07-04T11:47:31.309Z] Checked if tokens are valid: true, expires at: 1783169246765
+[debug] [2026-07-04T11:47:31.309Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/hilltop-properties-zm-b9619 [none]
+[debug] [2026-07-04T11:47:34.509Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/hilltop-properties-zm-b9619 403
+[debug] [2026-07-04T11:47:34.510Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/hilltop-properties-zm-b9619 {"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+[debug] [2026-07-04T11:47:34.510Z] Request to https://firebase.googleapis.com/v1beta1/projects/hilltop-properties-zm-b9619 had HTTP Error: 403, The caller does not have permission
+[debug] [2026-07-04T11:47:36.432Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/hilltop-properties-zm-b9619 had HTTP Error: 403, The caller does not have permission
+    at responseToError (C:\Users\Asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\responseToError.js:53:12)
+    at RetryOperation._fn (C:\Users\Asus\AppData\Roaming\npm\node_modules\firebase-tools\lib\apiv2.js:381:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[error] 
+[error] Error: Failed to get Firebase project hilltop-properties-zm-b9619. Please make sure the project exists and your account has permission to access it.

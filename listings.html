@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browse public property listings from Hilltop Properties Zambia, including verified properties for sale and rent." />
-  <title>Browse Featured Properties | Hilltop Properties Zambia</title>
+  <meta name="description" content="" />
+  <title></title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%236b8c52'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-family='Georgia,serif' font-size='36' font-weight='700' fill='white'%3EH%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/fonts/proda-sans-medium/proda-sans-medium.css" />
   <link rel="stylesheet" href="website.css" />
 </head>
-<body>
+<body class="listings-page category-pending">
   <header class="site-header">
     <nav class="site-nav" id="siteNav">
       <a href="index.html">Home</a>
@@ -38,23 +39,14 @@
   <main>
     <section class="page-hero listings-page-hero">
       <div class="page-hero-content">
-        <p class="eyebrow">PROPERTY LISTINGS</p>
-        <h1>Browse Featured Properties</h1>
-        <p>Search verified homes, rentals, land, and commercial spaces across Lusaka and Livingstone.</p>
+        <p class="eyebrow category-copy" id="listingPageEyebrow"></p>
+        <h1 class="category-copy" id="listingPageTitle"></h1>
+        <p class="category-copy" id="listingPageDescription"></p>
       </div>
     </section>
 
-    <div class="site-status" id="siteStatus">Loading properties...</div>
-
     <section class="section listings-section">
-      <div class="section-heading listings-heading">
-        <div>
-          <p class="eyebrow">PROPERTY LISTINGS</p>
-          <h2>Browse Featured Properties</h2>
-          <p>Search verified homes, rentals, land, and commercial spaces across Lusaka and Livingstone.</p>
-        </div>
-        <p class="listing-count" id="listingsCount">Loading listings...</p>
-      </div>
+      <p class="listing-count" id="listingsCount" hidden></p>
 
       <div class="listings-controls" aria-label="Property listing controls">
         <input type="search" id="listingSearchInput" placeholder="Search title, reference, area, address, or type" />
@@ -79,18 +71,14 @@
         </select>
       </div>
 
-      <div class="property-grid listings-grid" id="listingsGrid"></div>
-      <div class="empty-state" id="listingsEmpty">No public properties match your filters right now.</div>
-    </section>
-
-    <section class="section cta-section">
-      <div class="cta-inner">
-        <p class="eyebrow">Need Help Choosing?</p>
-        <h2>Ask About A Property</h2>
-        <p>Send an enquiry and the Hilltop Properties Zambia team will help you with available listings, viewings, and branch support.</p>
-        <button class="btn primary contact-enquiry-btn public-enquiry-trigger" type="button">Send General Enquiry</button>
+      <div class="listing-results" aria-live="polite" aria-busy="true">
+        <div class="listings-state is-active" id="listingsLoading">Loading property listings...</div>
+        <div class="listings-state listings-error-state" id="listingsError" role="alert"></div>
+        <div class="listings-state listings-empty-state" id="listingsEmpty" role="status"></div>
+        <div class="property-grid listings-grid" id="listingsGrid"></div>
       </div>
     </section>
+
   </main>
 
   <div class="modal-overlay" id="enquiryModal" aria-hidden="true">
@@ -156,6 +144,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="currency.js"></script>
   <script src="website.js"></script>
 </body>
 </html>

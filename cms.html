@@ -186,9 +186,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           Featured Props
         </button>
-        <button class="cms-tab" data-section="services-showcase">
+        <button class="cms-tab" data-section="property-services">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10"/><path d="M7 12h6"/><path d="M7 16h8"/></svg>
-          Services Showcase
+          Property Services
         </button>
         <button class="cms-tab" data-section="news">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -542,36 +542,86 @@
         </div>
       </section>
 
-      <!-- ── SERVICES SHOWCASE ── -->
-      <section class="cms-panel" id="panel-services-showcase">
-        <div class="cms-panel-header">
+      <!-- ── PROPERTY SERVICES ── -->
+      <section class="cms-panel" id="panel-property-services">
+        <div class="cms-panel-header property-services-page-header">
           <div>
-            <h2 class="cms-panel-title">Services Showcase</h2>
-            <p class="cms-panel-desc">This controls the Services section on the public homepage.</p>
+            <div class="property-services-title-row">
+              <h2 class="cms-panel-title">Property Services</h2>
+              <span class="property-services-unsaved" id="propertyServicesUnsaved" hidden>Unsaved changes</span>
+            </div>
+            <p class="cms-panel-desc">Manage the homepage service choices, illustrations, descriptions, actions, and display order.</p>
           </div>
-          <button class="action-btn primary" id="btnAddServiceShowcase">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create Missing Default Service Cards
-          </button>
+          <div class="property-services-header-actions">
+            <a class="action-btn outline" href="index.html" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Preview Website
+            </a>
+            <button class="action-btn primary" type="button" id="propertyServicesSave">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+              Save Changes
+            </button>
+          </div>
         </div>
-        <div class="info-note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Active items render on the public homepage as image-led cards. Property Marketing controls the large middle case-study card and optional pinned scroll-scrub video.
+
+        <div class="property-services-status" id="propertyServicesStatus" role="status" aria-live="polite"></div>
+
+        <div class="property-services-top-grid">
+          <section class="property-services-settings-card" aria-labelledby="propertyServicesSettingsTitle">
+            <div class="property-services-card-heading">
+              <div>
+                <h3 id="propertyServicesSettingsTitle">Section Settings</h3>
+                <p>Control the heading and visibility of the complete homepage section.</p>
+              </div>
+              <label class="property-services-toggle">
+                <input type="checkbox" id="propertyServicesVisible" />
+                <span aria-hidden="true"></span>
+                Show section on website
+              </label>
+            </div>
+            <div class="property-services-field">
+              <label for="propertyServicesEyebrow">Small label <span>40 characters maximum</span></label>
+              <input type="text" id="propertyServicesEyebrow" maxlength="40" required />
+              <small class="property-services-field-error" data-error-for="eyebrow"></small>
+            </div>
+            <div class="property-services-field">
+              <label for="propertyServicesHeading">Main heading <span>80 characters maximum</span></label>
+              <input type="text" id="propertyServicesHeading" maxlength="80" required />
+              <small class="property-services-field-error" data-error-for="heading"></small>
+            </div>
+            <div class="property-services-field">
+              <label for="propertyServicesSupporting">Supporting paragraph <span>300 characters maximum</span></label>
+              <textarea id="propertyServicesSupporting" rows="4" maxlength="300" required></textarea>
+              <small class="property-services-field-error" data-error-for="supporting_text"></small>
+            </div>
+          </section>
+
+          <aside class="property-services-preview-card" aria-labelledby="propertyServicesPreviewTitle">
+            <div class="property-services-card-heading">
+              <div>
+                <h3 id="propertyServicesPreviewTitle">Live Preview</h3>
+                <p>Preview reflects the current unsaved form values.</p>
+              </div>
+            </div>
+            <div class="property-services-preview" id="propertyServicesPreview">
+              <p class="property-services-preview-label"></p>
+              <h4 class="property-services-preview-title"></h4>
+              <p class="property-services-preview-intro"></p>
+              <div class="property-services-preview-grid"></div>
+            </div>
+          </aside>
         </div>
-        <div class="service-layout-guide" aria-label="Public Services section layout">
-          <span>Top Left Card: Property Sales</span>
-          <span>Top Right Card: Property Rentals</span>
-          <span>Middle Featured Video Card: Property Marketing</span>
-          <span>Bottom Left Card: Property Verification</span>
-          <span>Bottom Right Card: Branch Support</span>
-        </div>
-        <div class="service-showcase-dashboard" id="serviceShowcaseGrid"><!-- JS renders here --></div>
-        <div class="empty-state" id="serviceShowcaseEmpty" style="display:none">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10"/><path d="M7 12h6"/><path d="M7 16h8"/></svg>
-          <h3>No Services Showcase items found.</h3>
-          <p>Create the five public homepage service cards: Sales, Rentals, Marketing, Verification, and Branch Support.</p>
-          <button class="action-btn primary" id="btnCreateDefaultServices">Create Missing Default Service Cards</button>
-        </div>
+
+        <section class="property-services-editors" aria-labelledby="propertyServicesCardsTitle">
+          <div class="property-services-editors-heading">
+            <div>
+              <h3 id="propertyServicesCardsTitle">Service Cards</h3>
+              <p>Edit, reorder, hide, or restore the three approved homepage choices.</p>
+            </div>
+            <span>Maximum four visible cards</span>
+          </div>
+          <div id="propertyServicesEditorList"></div>
+        </section>
       </section>
 
       <!-- ── NEWS / ARTICLES ── -->
@@ -631,6 +681,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="auth-guard.js"></script>
+  <script src="currency.js"></script>
   <script src="cms.js"></script>
 </body>
 </html>

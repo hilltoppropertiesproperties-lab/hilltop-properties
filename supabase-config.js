@@ -48,8 +48,8 @@ setupHilltopSupabaseClient();
 
 function getMockBranches() {
   return [
-    { id: '11111111-1111-1111-1111-111111111111', name: 'Lusaka', address: 'Kabulonga, Lusaka, Zambia', contact_number: '+260 211 000 001' },
-    { id: '22222222-2222-2222-2222-222222222222', name: 'Livingstone', address: 'Mosi-oa-Tunya Road, Livingstone, Zambia', contact_number: '+260 213 000 002' }
+    { id: '11111111-1111-1111-1111-111111111111', name: 'Lusaka', address: 'Kabulonga, Lusaka, Zambia', contact_number: '+260 979 972019' },
+    { id: '22222222-2222-2222-2222-222222222222', name: 'Livingstone', address: 'Mosi-oa-Tunya Road, Livingstone, Zambia', contact_number: '+260 979 328 997' }
   ];
 }
 
@@ -61,6 +61,7 @@ function getMockProperties() {
       title: '4-Bedroom Executive House in Kabulonga',
       description: 'Stunning executive residence in the prestigious Kabulonga area. Features high ceilings, modern finishes, a private garden, and beautiful architectural touches.',
       price: 2400000.00,
+      currency_code: 'ZMW',
       purpose: 'For Sale',
       property_type: 'House',
       branch_id: '11111111-1111-1111-1111-111111111111',
@@ -81,6 +82,7 @@ function getMockProperties() {
       title: '2-Bedroom Apartment in Levy Junction',
       description: 'Modern apartment in the Levy Junction complex. Perfect for young professionals or investment. Clean layout, security included.',
       price: 8500.00,
+      currency_code: 'ZMW',
       purpose: 'For Rent',
       property_type: 'Apartment',
       branch_id: '11111111-1111-1111-1111-111111111111',
@@ -101,6 +103,7 @@ function getMockProperties() {
       title: 'Commercial Office Space - Cairo Road',
       description: 'Premium Grade-A commercial office space in the heart of Lusaka business district. High foot traffic, great road visibility.',
       price: 22000.00,
+      currency_code: 'ZMW',
       purpose: 'For Rent',
       property_type: 'Commercial',
       branch_id: '11111111-1111-1111-1111-111111111111',
@@ -121,6 +124,7 @@ function getMockProperties() {
       title: '1-Acre Residential Plot - Chalala',
       description: 'Prime residential plot in Chalala. Fully serviced with tarred road access, clean title deed, perfect for family development.',
       price: 980000.00,
+      currency_code: 'ZMW',
       purpose: 'For Sale',
       property_type: 'Land',
       branch_id: '11111111-1111-1111-1111-111111111111',
@@ -141,6 +145,7 @@ function getMockProperties() {
       title: 'Riverside Lodge Plot - Victoria Falls',
       description: 'Rare riverside plot with uninterrupted views of the Zambezi. Exceptional investment opportunity near Victoria Falls.',
       price: 3200000.00,
+      currency_code: 'ZMW',
       purpose: 'For Sale',
       property_type: 'Land',
       branch_id: '22222222-2222-2222-2222-222222222222',
@@ -168,4 +173,3 @@ function getMockPropertyImages() {
     { property_id: '10000000-0000-0000-0000-000000000008', image_url: 'https://example.com/broken-land-image.jpg', display_order: 1, is_cover: true }
   ];
 }
-

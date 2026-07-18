@@ -17,7 +17,7 @@ var homepageContent = {
   ctaText:        'Browse Properties',
   ctaLink:        'https://hilltopzambia.com/properties',
   aboutText:      'Hilltop Properties Zambia has been a trusted name in the Zambian real estate market for over a decade, offering personalised service across both residential and commercial sectors.',
-  servicesText:   'We offer property sales, residential and commercial rentals, property management, valuations, and expert investment advice for the Zambian market.',
+  servicesText:   '+260 979 972019\nPROBRYMALYANGO@GMAIL.COM\nKabulonga, Lusaka, Zambia',
   heroVideoUrl:   '',
   heroPosterUrl:  '',
   heroVideoUpdatedAt: ''
@@ -593,7 +593,7 @@ function cmsActionHtml(html) {
 
 function applyCmsPermissions() {
   if (canManageCms()) return;
-  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnWhyHeroSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddServiceShowcase,#btnAddArticle,#cmsModalSave').forEach(function(btn) {
+  document.querySelectorAll('#btnHpDraft,#btnHpPublish,#btnHeroVideoSave,#btnWhyHeroSave,#btnAddBanner,#btnAddTeam,#btnAddTestimonial,#btnAddFeatured,#btnAddArticle,#cmsModalSave,#propertyServicesSave').forEach(function(btn) {
     if (btn) btn.style.display = 'none';
   });
 }
@@ -616,12 +616,13 @@ function quoteId(id) {
   return '\'' + String(id).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\'';
 }
 
-function formatCmsPrice(price, purpose) {
-  var numeric = Number(price || 0);
-  var formatted = 'ZMW ' + numeric.toLocaleString('en-ZM', {
-    maximumFractionDigits: numeric % 1 === 0 ? 0 : 2
-  });
-  return purpose === 'For Rent' ? formatted + ' / month' : formatted;
+function formatCmsPrice(price, purpose, currencyCode, billingPeriod) {
+  return window.HilltopCurrency.formatPropertyPrice(
+    price,
+    currencyCode,
+    purpose,
+    billingPeriod
+  );
 }
 
 function mapHomepageContent(row) {
@@ -744,7 +745,7 @@ function mapFeaturedProperty(row, propertyLookup) {
     title: property.title || 'Untitled property',
     branch: 'All',
     purpose: property.purpose || 'For Sale',
-    price: formatCmsPrice(property.price, property.purpose),
+    price: formatCmsPrice(property.price, property.purpose, property.currency_code, property.billing_period),
     propStatus: property.status || 'Draft',
     featured: row.is_visible,
     order: row.display_order || 0
@@ -1674,7 +1675,7 @@ async function loadServiceShowcaseItems(supabase) {
 async function loadCmsProperties(supabase) {
   var response = await supabase
     .from('properties')
-    .select('id, reference_number, title, price, purpose, property_type, status')
+    .select('id, reference_number, title, price, currency_code, purpose, property_type, status')
     .order('reference_number', { ascending: true });
   if (response.error) throw response.error;
   return response.data || [];
@@ -1712,7 +1713,7 @@ async function loadCMSData() {
     var teamResult = await loadTeamProfiles(supabase);
     var testimonialResult = await loadTestimonials(supabase);
     var featuredResult = await loadFeaturedProperties(supabase);
-    var serviceShowcaseResult = await loadServiceShowcaseItems(supabase);
+    var propertyServicesResult = await loadPropertyServicesCms(supabase);
 
     cmsStaffUsers = staffResult;
     cmsProperties = propertiesResult;
@@ -1731,7 +1732,10 @@ async function loadCMSData() {
     featuredProperties = featuredResult
       .map(function(row) { return mapFeaturedProperty(row, propertyLookup); })
       .filter(Boolean);
-    serviceShowcaseItems = serviceShowcaseResult.map(mapServiceShowcaseItem);
+    propertyServicesSection = propertyServicesResult.section;
+    propertyServiceCards = propertyServicesResult.cards;
+    propertyServicesTablesAvailable = propertyServicesResult.available;
+    takePropertyServicesSnapshot();
 
     cmsUsingSupabase = true;
     cmsTablesAvailable = true;
@@ -1786,6 +1790,10 @@ document.querySelectorAll('.cms-tab').forEach(function(tab) {
 });
 
 function switchSection(section) {
+  if (activeSection === 'property-services' && section !== activeSection && propertyServicesDirty) {
+    if (!window.confirm('You have unsaved Property Services changes. Leave this tab without saving?')) return;
+    setPropertyServicesDirty(false);
+  }
   activeSection = section;
 
   // Update tab buttons
@@ -1800,7 +1808,7 @@ function switchSection(section) {
 
   // Hide filter bar on form sections that have their own controls.
   var filterBar = document.getElementById('cmsFilterBar');
-  filterBar.style.display = (section === 'homepage' || section === 'why-hilltop') ? 'none' : 'flex';
+  filterBar.style.display = (section === 'homepage' || section === 'why-hilltop' || section === 'property-services') ? 'none' : 'flex';
 
   // Render the active section
   renderSection(section);
@@ -1813,7 +1821,7 @@ function renderSection(section) {
   if (section === 'team')         renderTeam();
   if (section === 'testimonials') renderTestimonials();
   if (section === 'featured')     renderFeatured();
-  if (section === 'services-showcase') renderServiceShowcase();
+  if (section === 'property-services') renderPropertyServicesCms();
   if (section === 'news')         renderArticles();
   updateCmsStats();
 }
@@ -4236,7 +4244,866 @@ if (hamburgerBtn && sidebar && sidebarOverlay) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   21. INITIAL PAGE LOAD
+   21. PROPERTY SERVICES CMS
+══════════════════════════════════════════════════════════════ */
+
+var PROPERTY_SERVICES_DEFAULTS = {
+  section: {
+    id: null,
+    section_key: 'homepage-property-services',
+    eyebrow: 'PROPERTY SERVICES',
+    heading: 'How Can We Help?',
+    supporting_text: 'Whether you are buying, renting, selling, or listing a property, Hilltop Properties Zambia can guide you through the next step.',
+    is_visible: true
+  },
+  cards: [
+    {
+      id: null,
+      slug: 'buy-property',
+      title: 'Buy a Property',
+      description: 'Explore verified houses, apartments, land, and commercial properties available across our operating locations.',
+      button_label: 'Explore Properties',
+      action_type: 'all_listings',
+      action_value: null,
+      default_image_path: 'assets/images/service-buy-property.svg',
+      custom_image_path: null,
+      image_alt: 'Illustration representing the search for a property to buy',
+      sort_order: 1,
+      is_visible: true
+    },
+    {
+      id: null,
+      slug: 'rent-property',
+      title: 'Rent a Property',
+      description: 'Find houses and apartments available for rent in Lusaka, Livingstone, and other listed locations.',
+      button_label: 'Explore Rentals',
+      action_type: 'rental_listings',
+      action_value: null,
+      default_image_path: 'assets/images/service-rent-property.svg',
+      custom_image_path: null,
+      image_alt: 'Illustration representing finding and renting a property',
+      sort_order: 2,
+      is_visible: true
+    },
+    {
+      id: null,
+      slug: 'list-property',
+      title: 'Sell or List a Property',
+      description: 'List your property with Hilltop and connect with interested buyers or tenants through our branch network.',
+      button_label: 'List Your Property',
+      action_type: 'list_property_enquiry',
+      action_value: null,
+      default_image_path: 'assets/images/service-list-property.svg',
+      custom_image_path: null,
+      image_alt: 'Illustration representing listing a property for sale or rent',
+      sort_order: 3,
+      is_visible: true
+    }
+  ]
+};
+
+function clonePropertyServicesDefaults() {
+  return JSON.parse(JSON.stringify(PROPERTY_SERVICES_DEFAULTS));
+}
+
+var initialPropertyServicesState = clonePropertyServicesDefaults();
+var propertyServicesSection = initialPropertyServicesState.section;
+var propertyServiceCards = initialPropertyServicesState.cards;
+var propertyServicesTablesAvailable = false;
+var propertyServicesDirty = false;
+var propertyServicesSaving = false;
+var propertyServicesSnapshot = '';
+var propertyServicePendingFiles = {};
+var propertyServiceRemoveCustom = {};
+
+async function loadPropertyServicesCms(supabase) {
+  var fallback = clonePropertyServicesDefaults();
+  var sectionResult = await supabase
+    .from('cms_services_section')
+    .select('id, section_key, eyebrow, heading, supporting_text, is_visible')
+    .eq('section_key', 'homepage-property-services')
+    .maybeSingle();
+
+  if (sectionResult.error) {
+    if (isMissingCmsTableError(sectionResult.error)) {
+      console.warn('Property Services CMS tables are unavailable. Run supabase/property-services-cms.sql.', sectionResult.error);
+      return { section: fallback.section, cards: fallback.cards, available: false };
+    }
+    throw sectionResult.error;
+  }
+
+  if (!sectionResult.data) {
+    return { section: fallback.section, cards: fallback.cards, available: false };
+  }
+
+  var cardsResult = await supabase
+    .from('cms_service_cards')
+    .select('id, section_id, slug, title, description, button_label, action_type, action_value, default_image_path, custom_image_path, image_alt, sort_order, is_visible')
+    .eq('section_id', sectionResult.data.id)
+    .order('sort_order', { ascending: true });
+
+  if (cardsResult.error) {
+    if (isMissingCmsTableError(cardsResult.error)) {
+      return { section: fallback.section, cards: fallback.cards, available: false };
+    }
+    throw cardsResult.error;
+  }
+
+  var rowsBySlug = {};
+  (cardsResult.data || []).forEach(function(row) { rowsBySlug[row.slug] = row; });
+  var mergedCards = fallback.cards.map(function(card) {
+    return rowsBySlug[card.slug] || Object.assign({}, card, { section_id: sectionResult.data.id });
+  });
+  (cardsResult.data || []).forEach(function(row) {
+    if (!PROPERTY_SERVICES_DEFAULTS.cards.some(function(card) { return card.slug === row.slug; })) mergedCards.push(row);
+  });
+  mergedCards.sort(function(a, b) { return Number(a.sort_order || 0) - Number(b.sort_order || 0); });
+
+  return {
+    section: sectionResult.data,
+    cards: mergedCards,
+    available: true
+  };
+}
+
+function serializablePropertyServicesState() {
+  return {
+    section: {
+      id: propertyServicesSection.id || null,
+      section_key: propertyServicesSection.section_key,
+      eyebrow: propertyServicesSection.eyebrow,
+      heading: propertyServicesSection.heading,
+      supporting_text: propertyServicesSection.supporting_text,
+      is_visible: Boolean(propertyServicesSection.is_visible)
+    },
+    cards: propertyServiceCards.map(function(card, index) {
+      return {
+        id: card.id || null,
+        slug: card.slug,
+        title: card.title,
+        description: card.description,
+        button_label: card.button_label,
+        action_type: card.action_type,
+        action_value: card.action_value || null,
+        default_image_path: card.default_image_path || null,
+        custom_image_path: card.custom_image_path || null,
+        image_alt: card.image_alt,
+        sort_order: index + 1,
+        is_visible: Boolean(card.is_visible)
+      };
+    })
+  };
+}
+
+function takePropertyServicesSnapshot() {
+  propertyServicesSnapshot = JSON.stringify(serializablePropertyServicesState());
+  setPropertyServicesDirty(false);
+}
+
+function setPropertyServicesDirty(isDirty) {
+  propertyServicesDirty = Boolean(isDirty);
+  var indicator = document.getElementById('propertyServicesUnsaved');
+  if (indicator) indicator.hidden = !propertyServicesDirty;
+}
+
+function setPropertyServicesStatus(message, type) {
+  var status = document.getElementById('propertyServicesStatus');
+  if (!status) return;
+  status.textContent = message || '';
+  status.className = 'property-services-status' + (type ? ' ' + type : '');
+}
+
+function propertyServiceCardBySlug(slug) {
+  return propertyServiceCards.find(function(card) { return card.slug === slug; }) || null;
+}
+
+function propertyServiceDefaultCard(slug) {
+  return PROPERTY_SERVICES_DEFAULTS.cards.find(function(card) { return card.slug === slug; }) || null;
+}
+
+function storageObjectPath(value) {
+  var path = String(value || '').trim();
+  if (!path) return '';
+  var marker = '/storage/v1/object/public/service-illustrations/';
+  var markerIndex = path.indexOf(marker);
+  if (markerIndex !== -1) return decodeURIComponent(path.slice(markerIndex + marker.length));
+  return path.indexOf('service-cards/') === 0 ? path : '';
+}
+
+function propertyServiceImageUrl(card) {
+  var pending = propertyServicePendingFiles[card.slug];
+  if (pending && pending.previewUrl) return pending.previewUrl;
+  var customPath = propertyServiceRemoveCustom[card.slug] ? '' : storageObjectPath(card.custom_image_path);
+  if (customPath) {
+    var supabase = getSupabaseClient();
+    var publicResult = supabase && supabase.storage.from('service-illustrations').getPublicUrl(customPath);
+    var publicUrl = publicResult && publicResult.data && publicResult.data.publicUrl;
+    if (publicUrl) return publicUrl;
+  }
+  var fallback = propertyServiceDefaultCard(card.slug);
+  return card.default_image_path || (fallback && fallback.default_image_path) || '';
+}
+
+function setSafePropertyServiceImage(img, card) {
+  var fallback = propertyServiceDefaultCard(card.slug);
+  var fallbackPath = card.default_image_path || (fallback && fallback.default_image_path) || '';
+  img.alt = card.image_alt || (fallback && fallback.image_alt) || '';
+  img.src = propertyServiceImageUrl(card) || fallbackPath;
+  img.onerror = function() {
+    if (fallbackPath && img.getAttribute('src') !== fallbackPath) {
+      img.src = fallbackPath;
+      return;
+    }
+    img.hidden = true;
+  };
+}
+
+function createPropertyServicesField(labelText, field, control, helperText) {
+  var wrapper = document.createElement('div');
+  wrapper.className = 'property-services-field';
+  var label = document.createElement('label');
+  label.htmlFor = control.id;
+  label.textContent = labelText;
+  if (helperText) {
+    var helper = document.createElement('span');
+    helper.textContent = helperText;
+    label.appendChild(helper);
+  }
+  wrapper.appendChild(label);
+  wrapper.appendChild(control);
+  var error = document.createElement('small');
+  error.className = 'property-services-field-error';
+  error.dataset.errorField = field;
+  wrapper.appendChild(error);
+  return wrapper;
+}
+
+function createPropertyServiceInput(id, value, maxLength) {
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.id = id;
+  input.value = value || '';
+  if (maxLength) input.maxLength = maxLength;
+  return input;
+}
+
+function createPropertyServiceTextarea(id, value, maxLength) {
+  var textarea = document.createElement('textarea');
+  textarea.id = id;
+  textarea.rows = 3;
+  textarea.value = value || '';
+  if (maxLength) textarea.maxLength = maxLength;
+  return textarea;
+}
+
+function createPropertyServiceActionSelect(card) {
+  var select = document.createElement('select');
+  select.id = 'propertyServiceAction-' + card.slug;
+  select.dataset.cardField = 'action_type';
+  [
+    ['all_listings', 'All Property Listings'],
+    ['rental_listings', 'Rental Listings'],
+    ['list_property_enquiry', 'List a Property Enquiry'],
+    ['internal_page', 'Custom Internal Page']
+  ].forEach(function(optionData) {
+    var option = document.createElement('option');
+    option.value = optionData[0];
+    option.textContent = optionData[1];
+    select.appendChild(option);
+  });
+  select.value = card.action_type || 'all_listings';
+  return select;
+}
+
+function renderPropertyServiceEditors() {
+  var list = document.getElementById('propertyServicesEditorList');
+  if (!list) return;
+  list.replaceChildren();
+  propertyServiceCards.sort(function(a, b) { return Number(a.sort_order || 0) - Number(b.sort_order || 0); });
+
+  propertyServiceCards.forEach(function(card, index) {
+    card.sort_order = index + 1;
+    var editor = document.createElement('article');
+    editor.className = 'property-service-editor';
+    editor.dataset.cardSlug = card.slug;
+
+    var header = document.createElement('div');
+    header.className = 'property-service-editor__header';
+    var identity = document.createElement('div');
+    var order = document.createElement('span');
+    order.className = 'property-service-editor__order';
+    order.textContent = 'Card ' + (index + 1);
+    var heading = document.createElement('h4');
+    heading.textContent = card.title || card.slug;
+    identity.appendChild(order);
+    identity.appendChild(heading);
+
+    var visibleLabel = document.createElement('label');
+    visibleLabel.className = 'property-services-toggle compact';
+    var visibleInput = document.createElement('input');
+    visibleInput.type = 'checkbox';
+    visibleInput.checked = Boolean(card.is_visible);
+    visibleInput.dataset.cardField = 'is_visible';
+    var visibleTrack = document.createElement('span');
+    visibleTrack.setAttribute('aria-hidden', 'true');
+    visibleLabel.appendChild(visibleInput);
+    visibleLabel.appendChild(visibleTrack);
+    visibleLabel.appendChild(document.createTextNode('Visible'));
+    header.appendChild(identity);
+    header.appendChild(visibleLabel);
+
+    var body = document.createElement('div');
+    body.className = 'property-service-editor__body';
+    var media = document.createElement('div');
+    media.className = 'property-service-editor__media';
+    var visual = document.createElement('div');
+    visual.className = 'property-service-editor__visual';
+    var image = document.createElement('img');
+    setSafePropertyServiceImage(image, card);
+    visual.appendChild(image);
+    var mediaActions = document.createElement('div');
+    mediaActions.className = 'property-service-editor__media-actions';
+    var replaceLabel = document.createElement('label');
+    replaceLabel.className = 'action-btn outline small';
+    replaceLabel.textContent = 'Replace illustration';
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/webp,image/jpeg';
+    fileInput.dataset.serviceImageInput = card.slug;
+    replaceLabel.appendChild(fileInput);
+    var removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'action-btn danger small';
+    removeButton.dataset.removeServiceImage = card.slug;
+    removeButton.textContent = 'Remove custom illustration';
+    removeButton.disabled = Boolean(propertyServiceRemoveCustom[card.slug]) || (!card.custom_image_path && !propertyServicePendingFiles[card.slug]);
+    mediaActions.appendChild(replaceLabel);
+    mediaActions.appendChild(removeButton);
+    var mediaNote = document.createElement('p');
+    mediaNote.className = 'property-service-editor__media-note';
+    var pending = propertyServicePendingFiles[card.slug];
+    mediaNote.textContent = pending && pending.warning
+      ? pending.warning
+      : 'PNG, WebP, or JPEG up to 2MB. Recommended minimum 600 × 450px.';
+    media.appendChild(visual);
+    media.appendChild(mediaActions);
+    media.appendChild(mediaNote);
+
+    var fields = document.createElement('div');
+    fields.className = 'property-service-editor__fields';
+    var alt = createPropertyServiceInput('propertyServiceAlt-' + card.slug, card.image_alt, 180);
+    alt.dataset.cardField = 'image_alt';
+    fields.appendChild(createPropertyServicesField('Illustration alternative text', 'image_alt', alt, '180 characters maximum'));
+    var title = createPropertyServiceInput('propertyServiceTitle-' + card.slug, card.title, 70);
+    title.dataset.cardField = 'title';
+    fields.appendChild(createPropertyServicesField('Card title', 'title', title, '70 characters maximum'));
+    var description = createPropertyServiceTextarea('propertyServiceDescription-' + card.slug, card.description, 260);
+    description.dataset.cardField = 'description';
+    fields.appendChild(createPropertyServicesField('Card description', 'description', description, '260 characters maximum'));
+    var button = createPropertyServiceInput('propertyServiceButton-' + card.slug, card.button_label, 40);
+    button.dataset.cardField = 'button_label';
+    fields.appendChild(createPropertyServicesField('Button label', 'button_label', button, '40 characters maximum'));
+    var action = createPropertyServiceActionSelect(card);
+    fields.appendChild(createPropertyServicesField('Button action', 'action_type', action, 'Controlled action only'));
+    var customPath = createPropertyServiceInput('propertyServicePath-' + card.slug, card.action_value || '', 240);
+    customPath.dataset.cardField = 'action_value';
+    var customPathField = createPropertyServicesField('Custom internal path', 'action_value', customPath, 'Example: services.html');
+    customPathField.dataset.internalPathField = card.slug;
+    customPathField.hidden = action.value !== 'internal_page';
+    fields.appendChild(customPathField);
+
+    body.appendChild(media);
+    body.appendChild(fields);
+
+    var footer = document.createElement('div');
+    footer.className = 'property-service-editor__footer';
+    var slug = document.createElement('code');
+    slug.textContent = card.slug;
+    var reorder = document.createElement('div');
+    reorder.className = 'property-service-editor__reorder';
+    var up = document.createElement('button');
+    up.type = 'button';
+    up.className = 'action-btn outline small';
+    up.dataset.moveServiceCard = 'up';
+    up.dataset.cardSlug = card.slug;
+    up.textContent = 'Move up';
+    up.disabled = index === 0;
+    var down = document.createElement('button');
+    down.type = 'button';
+    down.className = 'action-btn outline small';
+    down.dataset.moveServiceCard = 'down';
+    down.dataset.cardSlug = card.slug;
+    down.textContent = 'Move down';
+    down.disabled = index === propertyServiceCards.length - 1;
+    reorder.appendChild(up);
+    reorder.appendChild(down);
+    footer.appendChild(slug);
+    footer.appendChild(reorder);
+
+    editor.appendChild(header);
+    editor.appendChild(body);
+    editor.appendChild(footer);
+    list.appendChild(editor);
+  });
+
+  if (!canManageCms()) {
+    list.querySelectorAll('input,textarea,select,button').forEach(function(control) { control.disabled = true; });
+  }
+}
+
+function renderPropertyServicesPreview() {
+  var preview = document.getElementById('propertyServicesPreview');
+  if (!preview) return;
+  preview.classList.toggle('is-hidden-section', !propertyServicesSection.is_visible);
+  preview.querySelector('.property-services-preview-label').textContent = propertyServicesSection.eyebrow || 'PROPERTY SERVICES';
+  preview.querySelector('.property-services-preview-title').textContent = propertyServicesSection.heading || 'How Can We Help?';
+  preview.querySelector('.property-services-preview-intro').textContent = propertyServicesSection.supporting_text || '';
+  var grid = preview.querySelector('.property-services-preview-grid');
+  grid.replaceChildren();
+
+  propertyServiceCards.filter(function(card) { return card.is_visible; }).forEach(function(card) {
+    var item = document.createElement('article');
+    var img = document.createElement('img');
+    setSafePropertyServiceImage(img, card);
+    var title = document.createElement('h5');
+    title.textContent = card.title;
+    var description = document.createElement('p');
+    description.textContent = card.description;
+    var button = document.createElement('span');
+    button.textContent = card.button_label;
+    item.appendChild(img);
+    item.appendChild(title);
+    item.appendChild(description);
+    item.appendChild(button);
+    grid.appendChild(item);
+  });
+}
+
+function renderPropertyServicesCms() {
+  var panel = document.getElementById('panel-property-services');
+  if (!panel) return;
+  document.getElementById('propertyServicesEyebrow').value = propertyServicesSection.eyebrow || '';
+  document.getElementById('propertyServicesHeading').value = propertyServicesSection.heading || '';
+  document.getElementById('propertyServicesSupporting').value = propertyServicesSection.supporting_text || '';
+  document.getElementById('propertyServicesVisible').checked = Boolean(propertyServicesSection.is_visible);
+  renderPropertyServiceEditors();
+  renderPropertyServicesPreview();
+  if (!propertyServicesTablesAvailable) {
+    setPropertyServicesStatus('Run supabase/property-services-cms.sql to enable saving. Approved fallback content is shown.', 'error');
+  } else if (!propertyServicesDirty) {
+    setPropertyServicesStatus('', '');
+  }
+  if (!canManageCms()) {
+    panel.querySelectorAll('input,textarea,select').forEach(function(control) { control.disabled = true; });
+  }
+}
+
+function syncPropertyServicesStateFromForm() {
+  var eyebrow = document.getElementById('propertyServicesEyebrow');
+  if (!eyebrow) return;
+  propertyServicesSection.eyebrow = eyebrow.value;
+  propertyServicesSection.heading = document.getElementById('propertyServicesHeading').value;
+  propertyServicesSection.supporting_text = document.getElementById('propertyServicesSupporting').value;
+  propertyServicesSection.is_visible = document.getElementById('propertyServicesVisible').checked;
+
+  propertyServiceCards.forEach(function(card) {
+    var editor = document.querySelector('.property-service-editor[data-card-slug="' + card.slug + '"]');
+    if (!editor) return;
+    card.title = editor.querySelector('[data-card-field="title"]').value;
+    card.description = editor.querySelector('[data-card-field="description"]').value;
+    card.button_label = editor.querySelector('[data-card-field="button_label"]').value;
+    card.image_alt = editor.querySelector('[data-card-field="image_alt"]').value;
+    card.action_type = editor.querySelector('[data-card-field="action_type"]').value;
+    card.action_value = card.action_type === 'internal_page'
+      ? editor.querySelector('[data-card-field="action_value"]').value
+      : null;
+    card.is_visible = editor.querySelector('[data-card-field="is_visible"]').checked;
+  });
+}
+
+function clearPropertyServicesErrors() {
+  document.querySelectorAll('#panel-property-services .property-services-field-error').forEach(function(error) {
+    error.textContent = '';
+  });
+  document.querySelectorAll('#panel-property-services .has-error').forEach(function(field) {
+    field.classList.remove('has-error');
+  });
+}
+
+function showPropertyServicesFieldError(slug, field, message) {
+  var error;
+  if (slug) {
+    var editor = document.querySelector('.property-service-editor[data-card-slug="' + slug + '"]');
+    error = editor && editor.querySelector('[data-error-field="' + field + '"]');
+  } else {
+    error = document.querySelector('[data-error-for="' + field + '"]');
+  }
+  if (!error) return;
+  error.textContent = message;
+  if (error.parentElement) error.parentElement.classList.add('has-error');
+}
+
+function isSafeInternalPagePath(value) {
+  var path = String(value || '').trim();
+  if (!path || path.length > 240) return false;
+  if (/^(?:javascript|data|vbscript|https?):/i.test(path)) return false;
+  if (/^\/\//.test(path) || /\\/.test(path) || /[<>"`]/.test(path)) return false;
+  return /^(?:\/(?!\/)|\.\.?\/)?[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=@%/?#-]*$/.test(path);
+}
+
+function validatePropertyServicesForm() {
+  clearPropertyServicesErrors();
+  var valid = true;
+  var sectionRules = [
+    ['eyebrow', propertyServicesSection.eyebrow, 40, 'Small label'],
+    ['heading', propertyServicesSection.heading, 80, 'Main heading'],
+    ['supporting_text', propertyServicesSection.supporting_text, 300, 'Supporting paragraph']
+  ];
+  sectionRules.forEach(function(rule) {
+    var value = String(rule[1] || '').trim();
+    if (!value) {
+      showPropertyServicesFieldError('', rule[0], rule[3] + ' is required.');
+      valid = false;
+    } else if (value.length > rule[2]) {
+      showPropertyServicesFieldError('', rule[0], rule[3] + ' must be ' + rule[2] + ' characters or fewer.');
+      valid = false;
+    }
+  });
+
+  if (propertyServiceCards.filter(function(card) { return card.is_visible; }).length > 4) {
+    setPropertyServicesStatus('A maximum of four service cards may be visible.', 'error');
+    valid = false;
+  }
+
+  propertyServiceCards.forEach(function(card) {
+    [
+      ['title', card.title, 70, 'Card title'],
+      ['description', card.description, 260, 'Description'],
+      ['button_label', card.button_label, 40, 'Button label'],
+      ['image_alt', card.image_alt, 180, 'Alternative text']
+    ].forEach(function(rule) {
+      var value = String(rule[1] || '').trim();
+      if (!value) {
+        showPropertyServicesFieldError(card.slug, rule[0], rule[3] + ' is required.');
+        valid = false;
+      } else if (value.length > rule[2]) {
+        showPropertyServicesFieldError(card.slug, rule[0], rule[3] + ' must be ' + rule[2] + ' characters or fewer.');
+        valid = false;
+      }
+    });
+    if (!/^[a-z0-9-]+$/.test(card.slug)) {
+      setPropertyServicesStatus('A service card has an invalid slug.', 'error');
+      valid = false;
+    }
+    if (['all_listings', 'rental_listings', 'list_property_enquiry', 'internal_page'].indexOf(card.action_type) === -1) {
+      showPropertyServicesFieldError(card.slug, 'action_type', 'Select a supported action.');
+      valid = false;
+    }
+    if (card.action_type === 'internal_page' && !isSafeInternalPagePath(card.action_value)) {
+      showPropertyServicesFieldError(card.slug, 'action_value', 'Enter a safe relative website path.');
+      valid = false;
+    }
+  });
+  return valid;
+}
+
+function loadImageFileDimensions(file) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var image = new Image();
+    image.onload = function() {
+      var result = { width: image.naturalWidth, height: image.naturalHeight, previewUrl: url };
+      if (!result.width || !result.height) {
+        URL.revokeObjectURL(url);
+        reject(new Error('The selected image is corrupted.'));
+        return;
+      }
+      resolve(result);
+    };
+    image.onerror = function() {
+      URL.revokeObjectURL(url);
+      reject(new Error('The selected image is corrupted or unsupported.'));
+    };
+    image.src = url;
+  });
+}
+
+async function validatePropertyServiceImageFile(file) {
+  var allowedTypes = ['image/png', 'image/webp', 'image/jpeg'];
+  var extension = String(file.name || '').split('.').pop().toLowerCase();
+  if (allowedTypes.indexOf(file.type) === -1 || ['png', 'webp', 'jpg', 'jpeg'].indexOf(extension) === -1) {
+    throw new Error('Choose a PNG, WebP, or JPEG image. SVG uploads are not allowed.');
+  }
+  if (file.size > 2 * 1024 * 1024) throw new Error('Illustrations must be 2MB or smaller.');
+  var dimensions = await loadImageFileDimensions(file);
+  dimensions.warning = dimensions.width < 600 || dimensions.height < 450
+    ? 'Small image warning: ' + dimensions.width + ' × ' + dimensions.height + 'px. Recommended minimum is 600 × 450px.'
+    : 'Ready to upload: ' + dimensions.width + ' × ' + dimensions.height + 'px.';
+  return dimensions;
+}
+
+function revokePendingPropertyServicePreview(slug) {
+  var pending = propertyServicePendingFiles[slug];
+  if (pending && pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
+}
+
+async function handlePropertyServiceImageSelection(input) {
+  var slug = input.dataset.serviceImageInput;
+  var file = input.files && input.files[0];
+  if (!file) return;
+  try {
+    var dimensions = await validatePropertyServiceImageFile(file);
+    revokePendingPropertyServicePreview(slug);
+    propertyServicePendingFiles[slug] = {
+      file: file,
+      previewUrl: dimensions.previewUrl,
+      width: dimensions.width,
+      height: dimensions.height,
+      warning: dimensions.warning
+    };
+    propertyServiceRemoveCustom[slug] = false;
+    renderPropertyServiceEditors();
+    renderPropertyServicesPreview();
+    setPropertyServicesDirty(true);
+    setPropertyServicesStatus(dimensions.warning, dimensions.width < 600 || dimensions.height < 450 ? 'warning' : '');
+  } catch (error) {
+    input.value = '';
+    setPropertyServicesStatus(error.message || 'The illustration could not be validated.', 'error');
+  }
+}
+
+function sanitizeServiceIllustrationFilename(name) {
+  var safe = String(name || 'illustration').toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  return safe || 'illustration';
+}
+
+async function uploadPropertyServiceIllustration(card, pending) {
+  await requireSupabaseUploadSession(getSupabaseClient());
+  var recordKey = card.id || card.slug;
+  var path = 'service-cards/' + recordKey + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + sanitizeServiceIllustrationFilename(pending.file.name);
+  var upload = await getSupabaseClient().storage
+    .from('service-illustrations')
+    .upload(path, pending.file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: pending.file.type
+    });
+  if (upload.error) throw upload.error;
+  return path;
+}
+
+async function removePropertyServiceStorageObject(path) {
+  var safePath = storageObjectPath(path);
+  if (!safePath) return;
+  var result = await getSupabaseClient().storage.from('service-illustrations').remove([safePath]);
+  if (result.error) throw result.error;
+}
+
+async function savePropertyServicesCms() {
+  if (propertyServicesSaving || !ensureCmsReadyForWrite()) return;
+  syncPropertyServicesStateFromForm();
+  if (!validatePropertyServicesForm()) {
+    setPropertyServicesStatus('Correct the highlighted fields before saving.', 'error');
+    return;
+  }
+  if (!propertyServicesTablesAvailable) {
+    setPropertyServicesStatus('Run supabase/property-services-cms.sql before saving.', 'error');
+    return;
+  }
+
+  propertyServicesSaving = true;
+  var saveButton = document.getElementById('propertyServicesSave');
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.lastChild.textContent = ' Saving…';
+  }
+  setPropertyServicesStatus('Saving section settings and service cards…', 'saving');
+  var previousState;
+  try {
+    previousState = propertyServicesSnapshot ? JSON.parse(propertyServicesSnapshot) : clonePropertyServicesDefaults();
+    var supabase = getSupabaseClient();
+    var sectionPayload = {
+      section_key: 'homepage-property-services',
+      eyebrow: propertyServicesSection.eyebrow.trim(),
+      heading: propertyServicesSection.heading.trim(),
+      supporting_text: propertyServicesSection.supporting_text.trim(),
+      is_visible: Boolean(propertyServicesSection.is_visible)
+    };
+    var sectionSave = await supabase
+      .from('cms_services_section')
+      .upsert(sectionPayload, { onConflict: 'section_key' })
+      .select('id, section_key, eyebrow, heading, supporting_text, is_visible')
+      .single();
+    if (sectionSave.error) throw sectionSave.error;
+    propertyServicesSection = sectionSave.data;
+
+    for (var tempIndex = 0; tempIndex < propertyServiceCards.length; tempIndex += 1) {
+      var tempCard = propertyServiceCards[tempIndex];
+      if (tempCard.id) {
+        var tempOrderResult = await supabase
+          .from('cms_service_cards')
+          .update({ sort_order: 100 + tempIndex })
+          .eq('id', tempCard.id);
+        if (tempOrderResult.error) throw tempOrderResult.error;
+      }
+    }
+
+    for (var index = 0; index < propertyServiceCards.length; index += 1) {
+      var card = propertyServiceCards[index];
+      var pending = propertyServicePendingFiles[card.slug];
+      var removeCustom = Boolean(propertyServiceRemoveCustom[card.slug]);
+      var previousCustomPath = card.custom_image_path || null;
+      var uploadedPath = null;
+      if (pending) uploadedPath = await uploadPropertyServiceIllustration(card, pending);
+
+      var desiredCustomPath = removeCustom ? null : (uploadedPath || previousCustomPath);
+      var cardPayload = {
+        section_id: propertyServicesSection.id,
+        slug: card.slug,
+        title: card.title.trim(),
+        description: card.description.trim(),
+        button_label: card.button_label.trim(),
+        action_type: card.action_type,
+        action_value: card.action_type === 'internal_page' ? card.action_value.trim() : null,
+        default_image_path: card.default_image_path || (propertyServiceDefaultCard(card.slug) || {}).default_image_path || null,
+        custom_image_path: desiredCustomPath,
+        image_alt: card.image_alt.trim(),
+        sort_order: index + 1,
+        is_visible: Boolean(card.is_visible)
+      };
+
+      var cardSelectColumns = 'id, section_id, slug, title, description, button_label, action_type, action_value, default_image_path, custom_image_path, image_alt, sort_order, is_visible';
+      var cardSave = card.id
+        ? await supabase.from('cms_service_cards').update(cardPayload).eq('id', card.id).select(cardSelectColumns).single()
+        : await supabase.from('cms_service_cards').insert(cardPayload).select(cardSelectColumns).single();
+      if (cardSave.error) {
+        if (uploadedPath) await removePropertyServiceStorageObject(uploadedPath);
+        throw cardSave.error;
+      }
+
+      if ((uploadedPath || removeCustom) && previousCustomPath && previousCustomPath !== desiredCustomPath) {
+        try {
+          await removePropertyServiceStorageObject(previousCustomPath);
+        } catch (deleteError) {
+          await supabase.from('cms_service_cards').update({ custom_image_path: previousCustomPath }).eq('id', cardSave.data.id);
+          if (uploadedPath) await removePropertyServiceStorageObject(uploadedPath);
+          throw deleteError;
+        }
+      }
+      propertyServiceCards[index] = cardSave.data;
+    }
+
+    var previousCardsBySlug = {};
+    (previousState.cards || []).forEach(function(card) { previousCardsBySlug[card.slug] = card; });
+    var sectionChanged = JSON.stringify(previousState.section || {}) !== JSON.stringify(serializablePropertyServicesState().section);
+    if (sectionChanged) await logCmsActivity('CMS_PROPERTY_SERVICES_SECTION_UPDATED', 'Homepage Property Services section settings were updated.');
+    var reordered = false;
+    for (var logIndex = 0; logIndex < propertyServiceCards.length; logIndex += 1) {
+      var savedCard = propertyServiceCards[logIndex];
+      var oldCard = previousCardsBySlug[savedCard.slug] || {};
+      if (Number(oldCard.sort_order) !== logIndex + 1) reordered = true;
+      if (Boolean(oldCard.is_visible) !== Boolean(savedCard.is_visible)) {
+        await logCmsActivity(savedCard.is_visible ? 'CMS_PROPERTY_SERVICE_CARD_RESTORED' : 'CMS_PROPERTY_SERVICE_CARD_HIDDEN', savedCard.slug + ' visibility was updated.');
+      }
+      await logCmsActivity('CMS_PROPERTY_SERVICE_CARD_UPDATED', savedCard.slug + ' service card was updated.');
+      if (propertyServicePendingFiles[savedCard.slug]) {
+        await logCmsActivity(oldCard.custom_image_path ? 'CMS_PROPERTY_SERVICE_ILLUSTRATION_REPLACED' : 'CMS_PROPERTY_SERVICE_ILLUSTRATION_UPLOADED', savedCard.slug + ' illustration was uploaded.');
+      }
+      if (propertyServiceRemoveCustom[savedCard.slug]) {
+        await logCmsActivity('CMS_PROPERTY_SERVICE_ILLUSTRATION_REMOVED', savedCard.slug + ' custom illustration was removed.');
+      }
+    }
+    if (reordered) await logCmsActivity('CMS_PROPERTY_SERVICE_CARDS_REORDERED', 'Homepage Property Services cards were reordered.');
+
+    Object.keys(propertyServicePendingFiles).forEach(revokePendingPropertyServicePreview);
+    propertyServicePendingFiles = {};
+    propertyServiceRemoveCustom = {};
+    takePropertyServicesSnapshot();
+    renderPropertyServicesCms();
+    setPropertyServicesStatus('Property Services changes were saved successfully.', 'success');
+    showToast('Property Services changes saved.', 'success');
+  } catch (error) {
+    console.warn('Property Services CMS save failed.', error);
+    setPropertyServicesDirty(true);
+    setPropertyServicesStatus('Changes were not fully saved. ' + (error.message || 'Please try again.'), 'error');
+    showToast('Could not save Property Services changes.', 'error');
+  } finally {
+    propertyServicesSaving = false;
+    if (saveButton) {
+      saveButton.disabled = !canManageCms();
+      saveButton.lastChild.textContent = ' Save Changes';
+    }
+  }
+}
+
+var propertyServicesPanel = document.getElementById('panel-property-services');
+if (propertyServicesPanel) {
+  propertyServicesPanel.addEventListener('input', function(event) {
+    if (event.target.matches('input[type="file"]')) return;
+    syncPropertyServicesStateFromForm();
+    setPropertyServicesDirty(true);
+    renderPropertyServicesPreview();
+  });
+  propertyServicesPanel.addEventListener('change', function(event) {
+    if (event.target.matches('[data-service-image-input]')) {
+      handlePropertyServiceImageSelection(event.target);
+      return;
+    }
+    syncPropertyServicesStateFromForm();
+    if (event.target.dataset.cardField === 'action_type') {
+      var editor = event.target.closest('.property-service-editor');
+      var pathField = editor && editor.querySelector('[data-internal-path-field]');
+      if (pathField) pathField.hidden = event.target.value !== 'internal_page';
+    }
+    if (event.target.dataset.cardField === 'is_visible' && propertyServiceCards.filter(function(card) { return card.is_visible; }).length > 4) {
+      event.target.checked = false;
+      syncPropertyServicesStateFromForm();
+      setPropertyServicesStatus('A maximum of four service cards may be visible.', 'error');
+    }
+    setPropertyServicesDirty(true);
+    renderPropertyServicesPreview();
+  });
+  propertyServicesPanel.addEventListener('click', function(event) {
+    var moveButton = event.target.closest('[data-move-service-card]');
+    if (moveButton) {
+      syncPropertyServicesStateFromForm();
+      var currentIndex = propertyServiceCards.findIndex(function(card) { return card.slug === moveButton.dataset.cardSlug; });
+      var nextIndex = moveButton.dataset.moveServiceCard === 'up' ? currentIndex - 1 : currentIndex + 1;
+      if (currentIndex >= 0 && nextIndex >= 0 && nextIndex < propertyServiceCards.length) {
+        var moved = propertyServiceCards.splice(currentIndex, 1)[0];
+        propertyServiceCards.splice(nextIndex, 0, moved);
+        propertyServiceCards.forEach(function(card, index) { card.sort_order = index + 1; });
+        renderPropertyServiceEditors();
+        renderPropertyServicesPreview();
+        setPropertyServicesDirty(true);
+      }
+      return;
+    }
+    var removeButton = event.target.closest('[data-remove-service-image]');
+    if (removeButton) {
+      var slug = removeButton.dataset.removeServiceImage;
+      revokePendingPropertyServicePreview(slug);
+      delete propertyServicePendingFiles[slug];
+      propertyServiceRemoveCustom[slug] = true;
+      renderPropertyServiceEditors();
+      renderPropertyServicesPreview();
+      setPropertyServicesDirty(true);
+      setPropertyServicesStatus('The approved static illustration will be restored after saving.', 'warning');
+    }
+  });
+}
+
+var propertyServicesSaveButton = document.getElementById('propertyServicesSave');
+if (propertyServicesSaveButton) propertyServicesSaveButton.addEventListener('click', savePropertyServicesCms);
+
+window.addEventListener('beforeunload', function(event) {
+  if (!propertyServicesDirty) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+
+/* ══════════════════════════════════════════════════════════════
+   22. INITIAL PAGE LOAD
 ══════════════════════════════════════════════════════════════ */
 
 // Load CMS tables if available; otherwise keep the existing demo CMS data.

@@ -227,11 +227,19 @@ var branchFilter      = document.getElementById('branchFilter');
 var searchInput       = document.getElementById('searchInput');
 var statusFilter      = document.getElementById('statusFilter');
 var purposeFilter     = document.getElementById('purposeFilter');
+var exclusiveFilter   = document.getElementById('exclusiveFilter');
+var currencyFilter    = document.getElementById('currencyFilter');
+var propertyCategoryNav = document.getElementById('propertyCategoryNav');
+var propertyPageTitle = document.getElementById('propertyPageTitle');
+var propertyPageSubtitle = document.getElementById('propertyPageSubtitle');
 var propTableBody     = document.getElementById('propTableBody');
 var propCards         = document.getElementById('propCards');
 var emptyState        = document.getElementById('emptyState');
+var emptyStateTitle   = document.getElementById('emptyStateTitle');
+var emptyStateText    = document.getElementById('emptyStateText');
 var propTable         = document.getElementById('propTable');
 var selectAll         = document.getElementById('selectAll');
+var headerCheck       = document.getElementById('headerCheck');
 var bulkCount         = document.getElementById('bulkCount');
 var btnBulkStatus     = document.getElementById('btnBulkStatus');
 var btnBulkDelete     = document.getElementById('btnBulkDelete');
@@ -243,12 +251,18 @@ var modalClose        = document.getElementById('modalClose');
 var modalCancelBtn    = document.getElementById('modalCancelBtn');
 var propForm          = document.getElementById('propForm');
 var modalTitle        = document.getElementById('modalTitle');
+var modalSaveBtn      = document.getElementById('modalSaveBtn');
 var editIdField       = document.getElementById('editId');
 var imageDropZone     = document.getElementById('imageDropZone');
 var imageFileInput    = document.getElementById('imageFileInput');
 var imagePreviewGrid  = document.getElementById('imagePreviewGrid');
 var btnBrowseImages   = document.getElementById('btnBrowseImages');
 var toastEl           = document.getElementById('toast');
+var propertyPagination = document.getElementById('propertyPagination');
+var propertyPaginationSummary = document.getElementById('propertyPaginationSummary');
+var propertyPageIndicator = document.getElementById('propertyPageIndicator');
+var propertyPagePrevious = document.getElementById('propertyPagePrevious');
+var propertyPageNext = document.getElementById('propertyPageNext');
 
 // Stat number elements
 var statTotal     = document.getElementById('statTotal');
@@ -267,9 +281,170 @@ var currentBranch  = 'all';
 var currentSearch  = '';
 var currentStatus  = 'all';
 var currentPurpose = 'all';
+var currentExclusive = 'all';
+var currentCurrency = 'all';
+var currentCategory = 'all';
+var currentPage = 1;
+var currentPageProperties = [];
+var selectedPropertyIds = new Set();
+var PROPERTIES_PER_PAGE = 10;
 var isUsingSupabaseProperties = false;
 var propertyBranches = [];
 var propertyStaff = [];
+var isPropertySavePending = false;
+
+var PROPERTY_CATEGORY_CONFIG = {
+  all: {
+    heading: 'All Properties',
+    subtitle: 'Manage all property listings for Hilltop Properties Zambia.',
+    emptyTitle: 'No properties were found.',
+    formType: ''
+  },
+  house: {
+    heading: 'Houses',
+    subtitle: 'Manage house listings across all Hilltop branches.',
+    emptyTitle: 'No house listings were found.',
+    formType: 'House'
+  },
+  apartment: {
+    heading: 'Apartments',
+    subtitle: 'Manage apartment listings across all Hilltop branches.',
+    emptyTitle: 'No apartment listings were found.',
+    formType: 'Apartment'
+  },
+  land: {
+    heading: 'Land',
+    subtitle: 'Manage land listings across all Hilltop branches.',
+    emptyTitle: 'No land listings were found.',
+    formType: 'Land'
+  }
+};
+
+function normalizePropertyCategory(value) {
+  var normalized = String(value || '').trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PROPERTY_CATEGORY_CONFIG, normalized) ? normalized : 'all';
+}
+
+function normalizePropertyType(value) {
+  var normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'house' || normalized === 'houses') return 'house';
+  if (normalized === 'apartment' || normalized === 'apartments' || normalized === 'flat' || normalized === 'flats') return 'apartment';
+  if (normalized === 'land' || normalized === 'lands' || normalized === 'plot' || normalized === 'plots') return 'land';
+  return normalized;
+}
+
+function propertyMatchesCategory(property, category) {
+  return category === 'all' || normalizePropertyType(property && property.type) === category;
+}
+
+function isExclusiveProperty(property) {
+  return Boolean(property && (
+    property.exclusive === 'Yes' ||
+    property.exclusive === true ||
+    property.exclusive_property === true
+  ));
+}
+
+function getPropertyCurrency(property) {
+  var value = property && (property.currencyCode || property.currency_code);
+  return window.HilltopCurrency.normalizeCurrencyCode(value);
+}
+
+function updatePriceCurrencyPrefix() {
+  var currencySelect = document.getElementById('fCurrency');
+  var prefix = document.getElementById('fPricePrefix');
+  var wrap = document.getElementById('priceInputWrap');
+  if (!currencySelect || !prefix || !wrap) return;
+
+  var code = window.HilltopCurrency.normalizeCurrencyCode(currencySelect.value);
+  prefix.textContent = code === 'USD' ? '$' : 'K';
+  wrap.dataset.currency = code;
+}
+
+function getCategoryFromUrl() {
+  return normalizePropertyCategory(new URLSearchParams(window.location.search).get('category'));
+}
+
+function replaceInvalidCategoryUrl() {
+  var url = new URL(window.location.href);
+  var rawCategory = url.searchParams.get('category');
+  if (rawCategory === null) return;
+
+  var normalizedRawCategory = String(rawCategory).trim().toLowerCase();
+  var isSupported = Object.prototype.hasOwnProperty.call(PROPERTY_CATEGORY_CONFIG, normalizedRawCategory);
+  if (!isSupported || normalizedRawCategory === 'all') {
+    url.searchParams.delete('category');
+  } else {
+    url.searchParams.set('category', normalizedRawCategory);
+  }
+
+  if (url.pathname + url.search + url.hash === window.location.pathname + window.location.search + window.location.hash) return;
+  window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+}
+
+function updateCategoryUrl(category) {
+  var url = new URL(window.location.href);
+  if (category === 'all') {
+    url.searchParams.delete('category');
+  } else {
+    url.searchParams.set('category', category);
+  }
+  window.history.pushState({ propertyCategory: category }, '', url.pathname + url.search + url.hash);
+}
+
+function getCategoryCounts() {
+  return properties.reduce(function(counts, property) {
+    counts.all += 1;
+    var category = normalizePropertyType(property.type);
+    if (Object.prototype.hasOwnProperty.call(counts, category) && category !== 'all') {
+      counts[category] += 1;
+    }
+    return counts;
+  }, { all: 0, house: 0, apartment: 0, land: 0 });
+}
+
+function updateCategoryInterface() {
+  var config = PROPERTY_CATEGORY_CONFIG[currentCategory];
+  var counts = getCategoryCounts();
+  var activeTab = null;
+
+  propertyPageTitle.textContent = config.heading;
+  propertyPageSubtitle.textContent = config.subtitle;
+  document.title = config.heading + ' — Property Management — Hilltop Properties Zambia';
+
+  document.querySelectorAll('.property-category-tab').forEach(function(tab) {
+    var isActive = tab.dataset.category === currentCategory;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-pressed', String(isActive));
+    if (isActive) activeTab = tab;
+  });
+
+  if (activeTab && propertyCategoryNav.scrollWidth > propertyCategoryNav.clientWidth) {
+    var tabLeft = activeTab.offsetLeft;
+    var tabRight = tabLeft + activeTab.offsetWidth;
+    var visibleLeft = propertyCategoryNav.scrollLeft;
+    var visibleRight = visibleLeft + propertyCategoryNav.clientWidth;
+    if (tabLeft < visibleLeft) propertyCategoryNav.scrollLeft = tabLeft - 6;
+    if (tabRight > visibleRight) propertyCategoryNav.scrollLeft = tabRight - propertyCategoryNav.clientWidth + 6;
+  }
+
+  document.getElementById('categoryCountAll').textContent = counts.all;
+  document.getElementById('categoryCountHouse').textContent = counts.house;
+  document.getElementById('categoryCountApartment').textContent = counts.apartment;
+  document.getElementById('categoryCountLand').textContent = counts.land;
+
+  emptyStateTitle.textContent = config.emptyTitle;
+  emptyStateText.textContent = 'Try adjusting your search or filters, or add a new property.';
+}
+
+function canonicalPropertyTypeForForm(value) {
+  var category = normalizePropertyType(value);
+  if (category === 'house') return 'House';
+  if (category === 'apartment') return 'Apartment';
+  if (category === 'land') return 'Land';
+  if (category === 'commercial') return 'Commercial';
+  return value || '';
+}
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -378,66 +553,27 @@ async function logActivity(entry) {
   }
 }
 
-function formatPrice(price, purpose) {
-  var numericPrice = Number(price || 0);
-  var formatted = 'ZMW ' + numericPrice.toLocaleString('en-ZM', {
-    maximumFractionDigits: numericPrice % 1 === 0 ? 0 : 2
-  });
-
-  return purpose === 'For Rent' ? formatted + ' / month' : formatted;
+function formatPrice(price, purpose, currencyCode, billingPeriod) {
+  return window.HilltopCurrency.formatPropertyPrice(
+    price,
+    currencyCode,
+    purpose,
+    billingPeriod
+  );
 }
 
 function parsePrice(value) {
   var result = parsePriceInput(value);
-  return result.value || 0;
+  if (!result.invalid && !result.empty) return result.value;
+
+  // Development sample records predate the numeric form input and contain
+  // a display string. This fallback is never used to validate a form save.
+  var legacyNumeric = Number(String(value || '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(legacyNumeric) ? legacyNumeric : 0;
 }
 
 function parsePriceInput(value) {
-  var raw = String(value || '').trim();
-  if (!raw) {
-    return { value: null, empty: true, invalid: false };
-  }
-
-  var normalized = raw
-    .toLowerCase()
-    .replace(/\u00a0/g, ' ')
-    .replace(/kwacha|zmw|per\s+month|\/\s*month|monthly/g, ' ')
-    .trim();
-
-  // Treat a leading K as the Kwacha symbol, while preserving suffixes like 250k.
-  normalized = normalized.replace(/^k\s*(?=\d)/i, '');
-
-  var multiplier = 1;
-  if (/\b(billion|bn)\b|\d\s*b\b/.test(normalized)) {
-    multiplier = 1000000000;
-  } else if (/\b(million|mil)\b|\d\s*m\b/.test(normalized)) {
-    multiplier = 1000000;
-  } else if (/\b(thousand)\b|\d\s*k\b/.test(normalized)) {
-    multiplier = 1000;
-  }
-
-  var numericText = normalized
-    .replace(/\b(billion|million|thousand|mil|bn)\b/g, ' ')
-    .replace(/(\d)\s*[mbk]\b/g, '$1 ')
-    .replace(/[^\d.,-]/g, '')
-    .replace(/,/g, '')
-    .trim();
-  var numberMatch = numericText.match(/-?\d+(?:\.\d+)?/);
-
-  if (!numberMatch) {
-    return { value: null, empty: false, invalid: true };
-  }
-
-  var parsed = Number(numberMatch[0]) * multiplier;
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return { value: null, empty: false, invalid: true };
-  }
-
-  return {
-    value: Math.round(parsed * 100) / 100,
-    empty: false,
-    invalid: false
-  };
+  return window.HilltopCurrency.parsePropertyPriceInput(value);
 }
 
 function parseAmenities(value) {
@@ -554,10 +690,11 @@ function mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty
     ref: record.reference_number,
     title: record.title,
     description: record.description || '',
-    price: formatPrice(record.price, record.purpose),
+    price: formatPrice(record.price, record.purpose, record.currency_code),
     priceValue: Number(record.price || 0),
+    currencyCode: window.HilltopCurrency.normalizeCurrencyCode(record.currency_code),
     purpose: record.purpose,
-    type: record.property_type,
+    type: canonicalPropertyTypeForForm(record.property_type),
     branch: branch ? cleanBranchName(branch.name) : 'Unassigned',
     branchId: record.branch_id || null,
     agent: agent ? agent.full_name : 'Unassigned',
@@ -570,6 +707,7 @@ function mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty
     size: Number(record.square_metres || 0),
     status: record.status,
     featured: record.featured ? 'Yes' : 'No',
+    exclusive: record.exclusive_property ? 'Yes' : 'No',
     amenities: Array.isArray(record.amenities) ? record.amenities.join(', ') : '',
     virtualTour: record.virtual_tour_link || '',
     youtube: record.youtube_link || '',
@@ -686,7 +824,7 @@ async function loadStaffForProperties() {
 async function loadPropertiesFromSupabase() {
   var response = await getSupabaseClient()
     .from('properties')
-    .select('id, reference_number, title, description, price, purpose, property_type, branch_id, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, amenities, virtual_tour_link, youtube_link, assigned_agent_id, created_at, updated_at')
+    .select('id, reference_number, title, description, price, currency_code, purpose, property_type, branch_id, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, exclusive_property, amenities, virtual_tour_link, youtube_link, assigned_agent_id, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (response.error) {
@@ -791,8 +929,10 @@ function getPropertyPayloadFromForm() {
   var referenceNumber = document.getElementById('fRef').value.trim();
   var priceInput = document.getElementById('fPrice');
   var priceResult = parsePriceInput(priceInput.value);
+  var currencyInput = document.getElementById('fCurrency');
+  var currencyCode = String(currencyInput.value || '').trim().toUpperCase();
   var purpose = document.getElementById('fPurpose').value;
-  var propertyType = document.getElementById('fType').value;
+  var propertyType = canonicalPropertyTypeForForm(document.getElementById('fType').value);
   var branchId = getCurrentBranchIdForWrite(document.getElementById('fBranch').value);
   var status = document.getElementById('fStatus').value;
   var assignedAgentId = document.getElementById('fAgent') ? document.getElementById('fAgent').value : '';
@@ -805,11 +945,19 @@ function getPropertyPayloadFromForm() {
   }
   if (priceResult.invalid) {
     priceInput.classList.add('error');
-    throw new Error('Please enter a valid price.');
+    throw new Error('Enter a positive numeric price without commas, letters, or currency symbols.');
   }
   priceInput.classList.remove('error');
+  if (!window.HilltopCurrency.isSupportedCurrency(currencyCode)) {
+    currencyInput.classList.add('error');
+    throw new Error('Please select ZMW or USD as the listing currency.');
+  }
+  currencyInput.classList.remove('error');
   if (!purpose) throw new Error('Purpose is required.');
   if (!propertyType) throw new Error('Property type is required.');
+  if (['House', 'Apartment', 'Commercial', 'Land'].indexOf(propertyType) === -1) {
+    throw new Error('Please select a supported property type.');
+  }
   if (!branchId) throw new Error('Branch is required.');
   if (!document.getElementById('fArea').value.trim()) throw new Error('Area is required.');
   if (!status) throw new Error('Status is required.');
@@ -819,6 +967,7 @@ function getPropertyPayloadFromForm() {
     title: title,
     description: document.getElementById('fDesc').value.trim() || null,
     price: priceResult.value,
+    currency_code: currencyCode,
     purpose: purpose,
     property_type: propertyType,
     branch_id: branchId,
@@ -830,6 +979,7 @@ function getPropertyPayloadFromForm() {
     square_metres: parseInt(document.getElementById('fSize').value, 10) || 0,
     status: status,
     featured: document.getElementById('fFeatured').value === 'Yes',
+    exclusive_property: document.getElementById('fExclusive').value === 'Yes',
     amenities: parseAmenities(document.getElementById('fAmenities').value),
     virtual_tour_link: document.getElementById('fVirtualTour').value.trim() || null,
     youtube_link: document.getElementById('fYoutube').value.trim() || null,
@@ -1029,6 +1179,8 @@ async function uploadPropertyMedia(propertyId, property) {
  */
 function getFilteredProperties() {
   return properties.filter(function(p) {
+    // Property category filter
+    if (!propertyMatchesCategory(p, currentCategory)) return false;
     // Branch filter
     if (currentBranch !== 'all') {
       if ((p.branch || '').toLowerCase() !== currentBranch) return false;
@@ -1037,6 +1189,11 @@ function getFilteredProperties() {
     if (currentStatus !== 'all' && p.status !== currentStatus) return false;
     // Purpose filter
     if (currentPurpose !== 'all' && p.purpose !== currentPurpose) return false;
+    // Currency filter
+    if (currentCurrency !== 'all' && getPropertyCurrency(p) !== currentCurrency) return false;
+    // Exclusive status filter
+    if (currentExclusive === 'exclusive' && !isExclusiveProperty(p)) return false;
+    if (currentExclusive === 'not-exclusive' && isExclusiveProperty(p)) return false;
     // Search filter — title, area, or ref
     if (currentSearch) {
       var q = currentSearch.toLowerCase();
@@ -1073,7 +1230,19 @@ function getBadgeClass(status) {
 function renderProperties() {
   populatePropertyBranchSelect();
   populatePropertyAgentSelect();
+  updateCategoryInterface();
   var filtered = getFilteredProperties();
+
+  var filteredIds = new Set(filtered.map(function(property) { return String(property.id); }));
+  selectedPropertyIds.forEach(function(id) {
+    if (!filteredIds.has(String(id))) selectedPropertyIds.delete(String(id));
+  });
+
+  var totalPages = Math.max(1, Math.ceil(filtered.length / PROPERTIES_PER_PAGE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  var pageStart = (currentPage - 1) * PROPERTIES_PER_PAGE;
+  currentPageProperties = filtered.slice(pageStart, pageStart + PROPERTIES_PER_PAGE);
 
   // Update stats from full filtered data
   updateStats(filtered);
@@ -1082,10 +1251,11 @@ function renderProperties() {
   var isEmpty = filtered.length === 0;
   emptyState.style.display = isEmpty ? 'flex' : 'none';
   propTable.style.display  = isEmpty ? 'none' : 'table';
+  propertyPagination.hidden = isEmpty;
 
   // ── Desktop Table ──
   propTableBody.innerHTML = '';
-  filtered.forEach(function(p) {
+  currentPageProperties.forEach(function(p) {
     var badgeClass = getBadgeClass(p.status);
     var purposeClass = p.purpose === 'For Sale' ? 'pill-sale' : 'pill-rent';
 
@@ -1093,7 +1263,7 @@ function renderProperties() {
     row.dataset.id = p.id;
 
     row.innerHTML = [
-      '<td class="col-check"><input type="checkbox" class="row-check" data-id="' + p.id + '" /></td>',
+      '<td class="col-check"><input type="checkbox" class="row-check" data-id="' + p.id + '"' + (selectedPropertyIds.has(String(p.id)) ? ' checked' : '') + ' /></td>',
       '<td>',
         '<div class="prop-cover">',
           p.coverImage
@@ -1105,6 +1275,7 @@ function renderProperties() {
       '<td>',
         '<div class="prop-ref">' + p.ref + '</div>',
         '<div class="prop-title-cell" title="' + p.title + '">' + p.title + '</div>',
+        isExclusiveProperty(p) ? '<span class="exclusive-badge">Exclusive</span>' : '',
       '</td>',
       '<td><span class="purpose-pill ' + purposeClass + '">' + p.purpose + '</span></td>',
       '<td>' + p.type + '</td>',
@@ -1132,7 +1303,7 @@ function renderProperties() {
 
   // ── Mobile Cards ──
   propCards.innerHTML = '';
-  filtered.forEach(function(p) {
+  currentPageProperties.forEach(function(p) {
     var badgeClass = getBadgeClass(p.status);
     var purposeClass = p.purpose === 'For Sale' ? 'pill-sale' : 'pill-rent';
 
@@ -1150,6 +1321,7 @@ function renderProperties() {
       '<div class="prop-card-body">',
         '<div class="prop-card-ref">' + p.ref + '</div>',
         '<div class="prop-card-title">' + p.title + '</div>',
+        isExclusiveProperty(p) ? '<span class="exclusive-badge">Exclusive</span>' : '',
         '<div class="prop-card-meta">',
           '<span><span class="purpose-pill ' + purposeClass + '">' + p.purpose + '</span></span>',
           '<span>' + p.type + '</span>',
@@ -1167,8 +1339,26 @@ function renderProperties() {
     propCards.appendChild(card);
   });
 
-  // Reset bulk selection
+  updatePagination(filtered.length, totalPages, pageStart);
+
   updateBulkCount();
+}
+
+function updatePagination(totalRecords, totalPages, pageStart) {
+  if (!totalRecords) {
+    propertyPaginationSummary.textContent = 'Showing 0 properties';
+    propertyPageIndicator.textContent = 'Page 1 of 1';
+    propertyPagePrevious.disabled = true;
+    propertyPageNext.disabled = true;
+    return;
+  }
+
+  var firstRecord = pageStart + 1;
+  var lastRecord = Math.min(pageStart + currentPageProperties.length, totalRecords);
+  propertyPaginationSummary.textContent = 'Showing ' + firstRecord + '–' + lastRecord + ' of ' + totalRecords + ' properties';
+  propertyPageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+  propertyPagePrevious.disabled = currentPage <= 1;
+  propertyPageNext.disabled = currentPage >= totalPages;
 }
 
 
@@ -1193,8 +1383,42 @@ document.querySelectorAll('.branch-btn').forEach(function(btn) {
     document.querySelectorAll('.branch-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     currentBranch = btn.dataset.branch;
+    currentPage = 1;
     renderProperties();
   });
+});
+
+propertyCategoryNav.addEventListener('click', function(event) {
+  var tab = event.target.closest('.property-category-tab');
+  if (!tab) return;
+
+  var nextCategory = normalizePropertyCategory(tab.dataset.category);
+  if (nextCategory === currentCategory) return;
+
+  currentCategory = nextCategory;
+  currentPage = 1;
+  updateCategoryUrl(currentCategory);
+  renderProperties();
+});
+
+window.addEventListener('popstate', function() {
+  currentCategory = getCategoryFromUrl();
+  currentPage = 1;
+  replaceInvalidCategoryUrl();
+  renderProperties();
+});
+
+propertyPagePrevious.addEventListener('click', function() {
+  if (currentPage <= 1) return;
+  currentPage -= 1;
+  renderProperties();
+});
+
+propertyPageNext.addEventListener('click', function() {
+  var totalPages = Math.max(1, Math.ceil(getFilteredProperties().length / PROPERTIES_PER_PAGE));
+  if (currentPage >= totalPages) return;
+  currentPage += 1;
+  renderProperties();
 });
 
 
@@ -1204,16 +1428,31 @@ document.querySelectorAll('.branch-btn').forEach(function(btn) {
 
 searchInput.addEventListener('input', function() {
   currentSearch = searchInput.value.trim();
+  currentPage = 1;
   renderProperties();
 });
 
 statusFilter.addEventListener('change', function() {
   currentStatus = statusFilter.value;
+  currentPage = 1;
   renderProperties();
 });
 
 purposeFilter.addEventListener('change', function() {
   currentPurpose = purposeFilter.value;
+  currentPage = 1;
+  renderProperties();
+});
+
+exclusiveFilter.addEventListener('change', function() {
+  currentExclusive = exclusiveFilter.value;
+  currentPage = 1;
+  renderProperties();
+});
+
+currencyFilter.addEventListener('change', function() {
+  currentCurrency = currencyFilter.value;
+  currentPage = 1;
   renderProperties();
 });
 
@@ -1258,6 +1497,12 @@ function handleTableAction(e) {
 
   // Row checkbox
   if (target.classList.contains('row-check')) {
+    var checkboxId = String(target.dataset.id);
+    if (target.checked) {
+      selectedPropertyIds.add(checkboxId);
+    } else {
+      selectedPropertyIds.delete(checkboxId);
+    }
     updateBulkCount();
   }
 }
@@ -1282,6 +1527,7 @@ function viewProperty(id) {
     'Beds: ' + p.beds + '  Baths: ' + p.baths + '  Garages: ' + p.garages + '\n' +
     'Size: ' + p.size + ' m²\n' +
     'Featured: ' + p.featured + '\n' +
+    'Exclusive: ' + (isExclusiveProperty(p) ? 'Yes' : 'No') + '\n' +
     'Agent: ' + (p.agent || 'Unassigned') + '\n' +
     'Images: ' + ((p.images || []).length) + '\n' +
     'Documents: ' + ((p.documents || []).length) + '\n' +
@@ -1326,23 +1572,46 @@ async function deleteProperty(id) {
 ══════════════════════════════════════════════════════════════ */
 
 selectAll.addEventListener('change', function() {
-  document.querySelectorAll('.row-check').forEach(function(cb) {
-    cb.checked = selectAll.checked;
-  });
-  updateBulkCount();
+  setCurrentPageSelection(selectAll.checked);
 });
 
-function getCheckedIds() {
-  var ids = [];
-  document.querySelectorAll('.row-check:checked').forEach(function(cb) {
-    ids.push(cb.dataset.id);
+headerCheck.addEventListener('change', function() {
+  setCurrentPageSelection(headerCheck.checked);
+});
+
+function setCurrentPageSelection(isSelected) {
+  currentPageProperties.forEach(function(property) {
+    var id = String(property.id);
+    if (isSelected) {
+      selectedPropertyIds.add(id);
+    } else {
+      selectedPropertyIds.delete(id);
+    }
   });
-  return ids;
+
+  document.querySelectorAll('.row-check').forEach(function(checkbox) {
+    checkbox.checked = isSelected;
+  });
+  updateBulkCount();
+}
+
+function getCheckedIds() {
+  return Array.from(selectedPropertyIds);
 }
 
 function updateBulkCount() {
   var count = getCheckedIds().length;
   bulkCount.textContent = count + ' selected';
+
+  var currentIds = currentPageProperties.map(function(property) { return String(property.id); });
+  var selectedOnPage = currentIds.filter(function(id) { return selectedPropertyIds.has(id); }).length;
+  var allOnPageSelected = currentIds.length > 0 && selectedOnPage === currentIds.length;
+  var someOnPageSelected = selectedOnPage > 0 && !allOnPageSelected;
+
+  selectAll.checked = allOnPageSelected;
+  selectAll.indeterminate = someOnPageSelected;
+  headerCheck.checked = allOnPageSelected;
+  headerCheck.indeterminate = someOnPageSelected;
 }
 
 // Bulk status change
@@ -1371,7 +1640,7 @@ btnBulkStatus.addEventListener('click', async function() {
       description: 'Changed status for ' + ids.length + ' properties to ' + newStatus + '.'
     });
     bulkStatusSelect.value = '';
-    selectAll.checked = false;
+    selectedPropertyIds.clear();
     showToast('Status updated for ' + ids.length + ' properties', 'success');
     await loadPropertyModuleData();
   } catch (error) {
@@ -1404,7 +1673,7 @@ btnBulkDelete.addEventListener('click', async function() {
       actionType: 'PROPERTY_ARCHIVED',
       description: 'Archived ' + ids.length + ' selected properties.'
     });
-    selectAll.checked = false;
+    selectedPropertyIds.clear();
     showToast('Property archived for audit safety.', 'success');
     await loadPropertyModuleData();
   } catch (error) {
@@ -1445,9 +1714,11 @@ function openModal(mode, id) {
     document.getElementById('fTitle').value    = p.title;
     document.getElementById('fRef').value      = p.ref;
     document.getElementById('fPrice').value    = p.priceValue || parsePrice(p.price);
+    document.getElementById('fCurrency').value = getPropertyCurrency(p);
+    document.getElementById('fCurrency').dataset.originalCurrency = getPropertyCurrency(p);
     document.getElementById('fDesc').value     = p.description;
     document.getElementById('fPurpose').value  = p.purpose;
-    document.getElementById('fType').value     = p.type;
+    document.getElementById('fType').value     = canonicalPropertyTypeForForm(p.type);
     document.getElementById('fBranch').value   = p.branchId || findPropertyBranchId(p.branch) || p.branch;
     populatePropertyAgentSelect();
     if (document.getElementById('fAgent')) {
@@ -1460,6 +1731,7 @@ function openModal(mode, id) {
     document.getElementById('fGarages').value  = p.garages;
     document.getElementById('fSize').value     = p.size;
     document.getElementById('fFeatured').value = p.featured;
+    document.getElementById('fExclusive').value = isExclusiveProperty(p) ? 'Yes' : 'No';
     document.getElementById('fAmenities').value = p.amenities;
     document.getElementById('fVirtualTour').value = p.virtualTour;
     document.getElementById('fYoutube').value  = p.youtube;
@@ -1472,12 +1744,19 @@ function openModal(mode, id) {
     modalTitle.textContent = 'Add New Property';
     editIdField.value = '';
     propForm.reset();
+    document.getElementById('fCurrency').value = 'ZMW';
+    document.getElementById('fCurrency').dataset.originalCurrency = 'ZMW';
+    document.getElementById('fType').value = PROPERTY_CATEGORY_CONFIG[currentCategory].formType;
+    document.getElementById('fExclusive').value = 'No';
     if (isCurrentUserBranchManager() && (window.hilltopCurrentUser || {}).branch_id) {
       document.getElementById('fBranch').value = window.hilltopCurrentUser.branch_id;
     }
     populatePropertyAgentSelect();
     highlightWorkflowStep('Draft');
   }
+
+  document.getElementById('currencyChangeWarning').hidden = true;
+  updatePriceCurrencyPrefix();
 
   // Show modal
   propModal.style.display = 'flex';
@@ -1552,6 +1831,16 @@ document.getElementById('fBranch').addEventListener('change', function() {
   populatePropertyAgentSelect();
 });
 
+document.getElementById('fCurrency').addEventListener('change', function() {
+  var warning = document.getElementById('currencyChangeWarning');
+  var isEditing = Boolean(editIdField.value);
+  var originalCurrency = this.dataset.originalCurrency || 'ZMW';
+  updatePriceCurrencyPrefix();
+  warning.hidden = !isEditing || this.value === originalCurrency;
+});
+
+updatePriceCurrencyPrefix();
+
 
 /* ══════════════════════════════════════════════════════════════
    13. FORM SAVE (ADD OR EDIT)
@@ -1559,9 +1848,10 @@ document.getElementById('fBranch').addEventListener('change', function() {
 
 propForm.addEventListener('submit', async function(e) {
   e.preventDefault();
+  if (isPropertySavePending) return;
 
   // Basic validation
-  var required = ['fTitle', 'fRef', 'fPrice', 'fPurpose', 'fType', 'fBranch', 'fArea', 'fStatus'];
+  var required = ['fTitle', 'fRef', 'fCurrency', 'fPrice', 'fPurpose', 'fType', 'fBranch', 'fArea', 'fStatus'];
   var valid = true;
   required.forEach(function(fieldId) {
     var el = document.getElementById(fieldId);
@@ -1586,19 +1876,29 @@ propForm.addEventListener('submit', async function(e) {
 
   if (!requirePropertyManagePermission(existingProperty)) return;
 
+  isPropertySavePending = true;
+  modalSaveBtn.disabled = true;
+  modalSaveBtn.setAttribute('aria-busy', 'true');
+  modalSaveBtn.textContent = 'Saving...';
+
   try {
     if (!getSupabaseClient()) {
-      showToast('Supabase is not available. Property changes cannot be saved.', 'error');
-      return;
+      throw new Error('Supabase is not available. Property changes cannot be saved.');
     }
 
     var payload = getPropertyPayloadFromForm();
     var savedPropertyId;
     var mediaPermissionProperty;
+    var successMessage;
 
     if (editId) {
       savedPropertyId = await updateProperty(editId, payload);
       var propertyStatusChanged = existingProperty && existingProperty.status !== payload.status;
+      var propertyTypeChanged = existingProperty && canonicalPropertyTypeForForm(existingProperty.type) !== payload.property_type;
+      var exclusiveChanged = existingProperty && isExclusiveProperty(existingProperty) !== payload.exclusive_property;
+      var previousCurrency = getPropertyCurrency(existingProperty);
+      var currencyChanged = existingProperty && previousCurrency !== payload.currency_code;
+      var priceChanged = existingProperty && Number(existingProperty.priceValue || 0) !== Number(payload.price);
       await logActivity({
         actionType: propertyStatusChanged ? 'PROPERTY_STATUS_UPDATED' : 'PROPERTY_UPDATED',
         description: propertyStatusChanged
@@ -1607,37 +1907,92 @@ propForm.addEventListener('submit', async function(e) {
         branchId: payload.branch_id,
         propertyId: savedPropertyId
       });
+      if (propertyTypeChanged) {
+        await logActivity({
+          actionType: 'PROPERTY_TYPE_UPDATED',
+          description: 'Changed property ' + payload.reference_number + ' type to ' + payload.property_type + '.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      }
+      if (currencyChanged) {
+        await logActivity({
+          actionType: 'PROPERTY_CURRENCY_UPDATED',
+          description: 'Changed property ' + payload.reference_number + ' currency from ' + previousCurrency + ' to ' + payload.currency_code + '. The price amount was not converted.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      }
+      if (priceChanged) {
+        await logActivity({
+          actionType: 'PROPERTY_PRICE_UPDATED',
+          description: 'Changed property ' + payload.reference_number + ' price from ' + formatPrice(existingProperty.priceValue, existingProperty.purpose, previousCurrency) + ' to ' + formatPrice(payload.price, payload.purpose, payload.currency_code) + '.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      }
+      if (exclusiveChanged) {
+        await logActivity({
+          actionType: payload.exclusive_property ? 'PROPERTY_EXCLUSIVE_ENABLED' : 'PROPERTY_EXCLUSIVE_DISABLED',
+          description: payload.exclusive_property
+            ? 'Marked property ' + payload.reference_number + ' as exclusive.'
+            : 'Removed property ' + payload.reference_number + ' from the exclusive showcase.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      } else if (payload.exclusive_property) {
+        await logActivity({
+          actionType: 'EXCLUSIVE_PROPERTY_UPDATED',
+          description: 'Updated exclusive property ' + payload.reference_number + '.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      }
       mediaPermissionProperty = {
         id: savedPropertyId,
         branchId: payload.branch_id,
         ref: payload.reference_number
       };
-      showToast('Property updated successfully.', 'success');
+      successMessage = 'Property updated successfully.';
     } else {
       savedPropertyId = await createProperty(payload);
       await logActivity({
         actionType: 'PROPERTY_CREATED',
-        description: 'Created property ' + payload.reference_number + '.',
+        description: 'Created property ' + payload.reference_number + ' with a ' + payload.currency_code + ' price of ' + formatPrice(payload.price, payload.purpose, payload.currency_code) + '.',
         branchId: payload.branch_id,
         propertyId: savedPropertyId
       });
+      if (payload.exclusive_property) {
+        await logActivity({
+          actionType: 'PROPERTY_EXCLUSIVE_ENABLED',
+          description: 'Created property ' + payload.reference_number + ' as an exclusive listing.',
+          branchId: payload.branch_id,
+          propertyId: savedPropertyId
+        });
+      }
       mediaPermissionProperty = {
         id: savedPropertyId,
         branchId: payload.branch_id,
         ref: payload.reference_number
       };
-      showToast('Property created successfully.', 'success');
+      successMessage = 'Property created successfully.';
     }
 
     if (hasPendingMediaOrDocumentFiles()) {
       await uploadPropertyMedia(savedPropertyId, mediaPermissionProperty);
     }
 
+    showToast(successMessage, 'success');
     closeModal();
     await loadPropertyModuleData();
   } catch (error) {
     console.warn('Property save failed.', error);
     showToast(error.message || 'Unable to save property.', 'error');
+  } finally {
+    isPropertySavePending = false;
+    modalSaveBtn.disabled = false;
+    modalSaveBtn.removeAttribute('aria-busy');
+    modalSaveBtn.textContent = 'Save Property';
   }
 });
 
@@ -1839,4 +2194,7 @@ function showToast(message, type) {
    18. INITIAL RENDER ON PAGE LOAD
 ══════════════════════════════════════════════════════════════ */
 
+currentCategory = getCategoryFromUrl();
+replaceInvalidCategoryUrl();
+updateCategoryInterface();
 loadPropertyModuleData();
