@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Property Management — Real estate management</title>
+  <title>Property Management — Hilltop Properties Zambia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -21,10 +21,10 @@
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">R</div>
+      <div class="brand-icon">H</div>
       <div class="brand-text">
-        <span class="brand-name">Real estate</span>
-        <span class="brand-sub">management</span>
+        <span class="brand-name">Hilltop</span>
+        <span class="brand-sub">Properties Zambia</span>
       </div>
     </div>
 
@@ -108,14 +108,15 @@
         </button>
         <div class="header-titles">
           <h1 class="page-title" id="propertyPageTitle">All Properties</h1>
-          <p class="page-subtitle" id="propertyPageSubtitle">Manage rental homes and apartments in Toney, Alabama.</p>
+          <p class="page-subtitle" id="propertyPageSubtitle">Manage all property listings for Hilltop Properties Zambia.</p>
         </div>
       </div>
       <div class="header-right">
         <p class="welcome-msg">Welcome back, <strong>Admin</strong></p>
         <div class="branch-filter" id="branchFilter">
-          <button class="branch-btn active" data-branch="all">All Locations</button>
-          <button class="branch-btn" data-branch="toney, alabama">Toney, Alabama</button>
+          <button class="branch-btn active" data-branch="all">All Branches</button>
+          <button class="branch-btn" data-branch="lusaka">Lusaka</button>
+          <button class="branch-btn" data-branch="livingstone">Livingstone</button>
         </div>
       </div>
     </header>
@@ -160,7 +161,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
           <div class="stat-body">
-            <p class="stat-label">Let</p>
+            <p class="stat-label">Sold / Let</p>
             <p class="stat-number" id="statSoldLet">0</p>
             <p class="stat-helper">Completed deals</p>
           </div>
@@ -181,6 +182,10 @@
           <span>Apartments</span>
           <span class="property-category-count" id="categoryCountApartment">0</span>
         </button>
+        <button class="property-category-tab" type="button" data-category="land" aria-pressed="false">
+          <span>Land</span>
+          <span class="property-category-count" id="categoryCountLand">0</span>
+        </button>
       </nav>
 
       <!-- TOOLBAR: SEARCH + FILTERS + ADD BUTTON -->
@@ -195,11 +200,14 @@
             <option value="Draft">Draft</option>
             <option value="Active">Active</option>
             <option value="Under Offer">Under Offer</option>
-            <option value="Let">Let</option>
+            <option value="Sold">Sold</option>
+            <option value="Let / Rented">Let / Rented</option>
             <option value="Withdrawn">Withdrawn</option>
             <option value="Archived">Archived</option>
           </select>
           <select id="purposeFilter" class="filter-select">
+            <option value="all">All Purposes</option>
+            <option value="For Sale">For Sale</option>
             <option value="For Rent">For Rent</option>
           </select>
           <select id="exclusiveFilter" class="filter-select" aria-label="Exclusive status">
@@ -208,6 +216,8 @@
             <option value="not-exclusive">Not Exclusive</option>
           </select>
           <select id="currencyFilter" class="filter-select" aria-label="Listing currency">
+            <option value="all">All Currencies</option>
+            <option value="ZMW">ZMW</option>
             <option value="USD">USD</option>
           </select>
         </div>
@@ -232,7 +242,6 @@
             <option value="Active">Active</option>
             <option value="Draft">Draft</option>
             <option value="Under Offer">Under Offer</option>
-            <option value="Let">Let</option>
             <option value="Withdrawn">Withdrawn</option>
             <option value="Archived">Archived</option>
           </select>
@@ -327,26 +336,27 @@
           <div class="form-row">
             <div class="form-group full">
               <label for="fTitle">Property Title <span class="req">*</span></label>
-              <input type="text" id="fTitle" placeholder="e.g. 3-Bedroom House in Toney" required />
+              <input type="text" id="fTitle" placeholder="e.g. 3-Bedroom House in Roma" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group half">
               <label for="fRef">Reference Number <span class="req">*</span></label>
-              <input type="text" id="fRef" placeholder="e.g. REM-TNY-001" required />
+              <input type="text" id="fRef" placeholder="e.g. HT-LSK-001" required />
             </div>
             <div class="currency-price-fields half">
               <div class="form-group currency-field">
                 <label for="fCurrency">Currency <span class="req">*</span></label>
                 <select id="fCurrency" required>
-                  <option value="USD" selected>USD</option>
+                  <option value="ZMW">ZMW</option>
+                  <option value="USD">USD</option>
                 </select>
               </div>
               <div class="form-group price-field">
                 <label for="fPrice">Price <span class="req">*</span></label>
-                <div class="price-input-wrap" id="priceInputWrap" data-currency="USD">
-                  <span class="price-input-prefix" id="fPricePrefix" aria-hidden="true">$</span>
-                  <input type="text" id="fPrice" inputmode="decimal" autocomplete="off" placeholder="e.g. 1500" required />
+                <div class="price-input-wrap" id="priceInputWrap" data-currency="ZMW">
+                  <span class="price-input-prefix" id="fPricePrefix" aria-hidden="true">K</span>
+                  <input type="text" id="fPrice" inputmode="decimal" autocomplete="off" placeholder="e.g. 450000" required />
                 </div>
               </div>
             </div>
@@ -366,14 +376,19 @@
             <div class="form-group half">
               <label for="fPurpose">Purpose <span class="req">*</span></label>
               <select id="fPurpose" required>
-                <option value="For Rent" selected>For Rent</option>
+                <option value="">Select…</option>
+                <option value="For Sale">For Sale</option>
+                <option value="For Rent">For Rent</option>
               </select>
             </div>
             <div class="form-group half">
               <label for="fType">Property Type <span class="req">*</span></label>
               <select id="fType" required>
-                <option value="House" selected>House</option>
+                <option value="">Select…</option>
+                <option value="House">House</option>
                 <option value="Apartment">Apartment</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Land">Land</option>
               </select>
             </div>
           </div>
@@ -381,21 +396,22 @@
           <div class="form-section-label">Location</div>
           <div class="form-row">
             <div class="form-group half">
-              <label for="fBranch">Location <span class="req">*</span></label>
+              <label for="fBranch">Branch <span class="req">*</span></label>
               <select id="fBranch" required>
                 <option value="">Select…</option>
-                <option value="Toney, Alabama">Toney, Alabama</option>
+                <option value="Lusaka">Lusaka</option>
+                <option value="Livingstone">Livingstone</option>
               </select>
             </div>
             <div class="form-group half">
               <label for="fArea">Neighbourhood / Area <span class="req">*</span></label>
-              <input type="text" id="fArea" value="Toney" placeholder="e.g. Toney" required />
+              <input type="text" id="fArea" placeholder="e.g. Kabulonga" required />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group full">
               <label for="fAddress">Full Address</label>
-              <input type="text" id="fAddress" placeholder="e.g. 123 Example Road, Toney, AL 35773" />
+              <input type="text" id="fAddress" placeholder="e.g. Plot 42, Addis Ababa Drive, Lusaka" />
             </div>
           </div>
           <div class="form-row">
@@ -448,31 +464,7 @@
           <div class="form-row">
             <div class="form-group full">
               <label for="fAmenities">Amenities (comma-separated)</label>
-              <input type="text" id="fAmenities" placeholder="e.g. Parking, Patio, Pet friendly, Washer/Dryer" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group full">
-              <label for="fAvailability">Availability <span class="req">*</span></label>
-              <input type="text" id="fAvailability" value="Available now" placeholder="e.g. Available now or Available August 1" required />
-            </div>
-          </div>
-
-          <div class="form-section-label">Viewing Contact Details</div>
-          <div class="form-row">
-            <div class="form-group half">
-              <label for="fViewingContactName">Contact Name</label>
-              <input type="text" id="fViewingContactName" placeholder="Leasing office" />
-            </div>
-            <div class="form-group half">
-              <label for="fViewingContactPhone">Contact Phone</label>
-              <input type="tel" id="fViewingContactPhone" placeholder="(256) 555-0100" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group full">
-              <label for="fViewingContactEmail">Contact Email</label>
-              <input type="email" id="fViewingContactEmail" placeholder="viewings@example.com" />
+              <input type="text" id="fAmenities" placeholder="e.g. Pool, Garden, Security, Borehole" />
             </div>
           </div>
           <div class="form-row">
@@ -595,9 +587,9 @@
               <span>Under Offer</span>
             </div>
             <div class="workflow-arrow">→</div>
-            <div class="workflow-step last-group" data-step="Let">
+            <div class="workflow-step last-group" data-step="Sold">
               <div class="wf-dot"></div>
-              <span>Let</span>
+              <span>Sold / Let</span>
             </div>
             <div class="workflow-or">or</div>
             <div class="workflow-step withdrawn" data-step="Withdrawn">
@@ -613,7 +605,8 @@
                 <option value="Draft">Draft</option>
                 <option value="Active">Active</option>
                 <option value="Under Offer">Under Offer</option>
-                <option value="Let">Let</option>
+                <option value="Sold">Sold</option>
+                <option value="Let / Rented">Let / Rented</option>
                 <option value="Withdrawn">Withdrawn</option>
                 <option value="Archived">Archived</option>
               </select>
@@ -625,8 +618,9 @@
             <ul>
               <li><span class="badge badge-draft">Draft</span> Property is being prepared. Not visible on website.</li>
               <li><span class="badge badge-active">Active</span> Live on the website. Accepting enquiries.</li>
-              <li><span class="badge badge-offer">Under Offer</span> Application pending. Hidden from the public website.</li>
-              <li><span class="badge badge-let">Let</span> Rental completed. Hidden from the public website.</li>
+              <li><span class="badge badge-offer">Under Offer</span> An offer has been accepted. Still visible.</li>
+              <li><span class="badge badge-sold">Sold</span> Sale completed. Moved to archive.</li>
+              <li><span class="badge badge-let">Let / Rented</span> Rental completed. Moved to archive.</li>
               <li><span class="badge badge-withdrawn">Withdrawn</span> Removed from market. Not visible.</li>
               <li><span class="badge badge-withdrawn">Archived</span> Kept for audit history. Not visible.</li>
             </ul>

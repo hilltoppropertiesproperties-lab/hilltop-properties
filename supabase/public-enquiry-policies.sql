@@ -30,7 +30,7 @@ with check (
       select 1
       from public.properties p
       where p.id = leads.property_id
-        and p.status = 'Active'
+        and p.status in ('Active', 'Under Offer')
     )
   )
 );

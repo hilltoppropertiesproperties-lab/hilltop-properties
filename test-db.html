@@ -1,34 +1,28 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>New Supabase connection test</title>
+  <title>Supabase Test</title>
 </head>
 <body>
-  <h1>Real estate management database test</h1>
-  <pre id="result">Checking configuration…</pre>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
+  <div id="result">Loading...</div>
   <script>
-    (async function () {
-      var output = document.getElementById('result');
-      var client = window.realEstateManagementSupabase;
-      if (!client) {
-        output.textContent = 'The new project is not configured in supabase-config.js.';
-        return;
-      }
+    const apiKey = "sb_publishable__XbGNz6V9C8YIyprXv3L2Q_e-VDwbdl";
+    const headers = {
+      "apikey": apiKey,
+      "Authorization": "Bearer " + apiKey
+    };
 
-      var result = await client
-        .from('properties')
-        .select('id, reference_number, status')
-        .eq('status', 'Active');
-
-      output.textContent = result.error
-        ? 'Connection failed: ' + result.error.message
-        : 'Connected to the new project. Active rentals: ' + result.data.length;
-    }());
+    Promise.all([
+      fetch("https://jhyedqmoaenkyzrgpvsc.supabase.co/rest/v1/properties", { headers }).then(res => res.json()),
+      fetch("https://jhyedqmoaenkyzrgpvsc.supabase.co/rest/v1/branches", { headers }).then(res => res.json()),
+      fetch("https://jhyedqmoaenkyzrgpvsc.supabase.co/rest/v1/staff_users", { headers }).then(res => res.json())
+    ])
+    .then(([properties, branches, staff_users]) => {
+      document.getElementById('result').innerText = JSON.stringify({ properties, branches, staff_users }, null, 2);
+    })
+    .catch(err => {
+      document.getElementById('result').innerText = "Error: " + err.message;
+    });
   </script>
 </body>
 </html>

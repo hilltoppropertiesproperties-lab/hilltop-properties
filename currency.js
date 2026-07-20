@@ -1,13 +1,14 @@
 /* ============================================================
-   REAL ESTATE MANAGEMENT - SHARED RENTAL PRICE FORMATTING
-   Rental listings use USD only.
+   HILLTOP PROPERTIES ZAMBIA - SHARED PROPERTY PRICE FORMATTING
+   Supported listing currencies: ZMW and USD.
    ============================================================ */
 
 (function (root) {
   'use strict';
 
-  var SUPPORTED_CURRENCIES = Object.freeze(['USD']);
+  var SUPPORTED_CURRENCIES = Object.freeze(['ZMW', 'USD']);
   var CURRENCY_PREFIXES = Object.freeze({
+    ZMW: 'K',
     USD: '$'
   });
 
@@ -17,7 +18,7 @@
 
   function normalizeCurrencyCode(value) {
     var code = String(value || '').trim().toUpperCase();
-    return isSupportedCurrency(code) ? code : 'USD';
+    return isSupportedCurrency(code) ? code : 'ZMW';
   }
 
   function normalizeBillingPeriod(value) {
@@ -70,7 +71,7 @@
     if (!Number.isFinite(amount)) amount = 0;
 
     var code = normalizeCurrencyCode(currencyCode);
-    var formattedAmount = amount.toLocaleString('en-US', {
+    var formattedAmount = amount.toLocaleString('en-ZM', {
       minimumFractionDigits: 0,
       maximumFractionDigits: amount % 1 === 0 ? 0 : 2
     });

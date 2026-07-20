@@ -1,5 +1,5 @@
 -- ============================================================
--- REAL ESTATE MANAGEMENT - PUBLIC WEBSITE READ POLICIES
+-- HILLTOP PROPERTIES ZAMBIA - PUBLIC WEBSITE READ POLICIES
 -- Phase 8A: safe anon SELECT access for website.html.
 --
 -- Run this manually in Supabase SQL Editor before testing
@@ -11,7 +11,7 @@
 
 -- ============================================================
 -- PROPERTIES
--- Only Active rentals are public.
+-- Only public-facing active/under-offer listings.
 -- ============================================================
 
 drop policy if exists "Anon can read public active properties" on public.properties;
@@ -19,7 +19,7 @@ create policy "Anon can read public active properties"
 on public.properties
 for select
 to anon
-using (status = 'Active');
+using (status in ('Active', 'Under Offer'));
 
 grant select (
   id,
@@ -27,8 +27,6 @@ grant select (
   title,
   description,
   price,
-  currency_code,
-  billing_period,
   purpose,
   property_type,
   area,
@@ -40,10 +38,6 @@ grant select (
   status,
   featured,
   amenities,
-  availability,
-  viewing_contact_name,
-  viewing_contact_phone,
-  viewing_contact_email,
   virtual_tour_link,
   youtube_link,
   branch_id,
@@ -65,7 +59,7 @@ using (
     select 1
     from public.properties p
     where p.id = property_images.property_id
-      and p.status = 'Active'
+      and p.status in ('Active', 'Under Offer')
   )
 );
 
@@ -210,7 +204,7 @@ using (
     select 1
     from public.properties p
     where p.id = cms_featured_properties.property_id
-      and p.status = 'Active'
+      and p.status in ('Active', 'Under Offer')
   )
 );
 

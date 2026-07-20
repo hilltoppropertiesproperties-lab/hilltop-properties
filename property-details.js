@@ -1,5 +1,5 @@
 /* ============================================================
-   REAL ESTATE MANAGEMENT - PUBLIC RENTAL DETAILS
+   HILLTOP PROPERTIES ZAMBIA - PUBLIC PROPERTY DETAILS
    Phase 8C: read one public property and submit enquiries.
    ============================================================ */
 
@@ -15,9 +15,9 @@ var detailsState = {
 var enquirySubmitting = false;
 
 var fallbackContact = {
-  phone: '(256) 555-0100',
-  email: 'viewings@example.com',
-  address: 'Toney, Alabama'
+  phone: '+260 979 972019',
+  email: 'PROBRYMALYANGO@GMAIL.COM',
+  address: 'Kabulonga, Lusaka, Zambia'
 };
 
 function byId(id) {
@@ -87,7 +87,7 @@ function getBranchName(branchId) {
   var branch = detailsState.branches.find(function (item) {
     return String(item.id) === String(branchId);
   });
-  return branch ? branch.name : 'Toney, Alabama';
+  return branch ? branch.name : 'Hilltop Branch';
 }
 
 function getSimilarCoverImage(propertyId) {
@@ -105,7 +105,7 @@ function propertyStatusClass(status) {
   var value = String(status || '').toLowerCase();
   if (value === 'active') return 'status-active';
   if (value === 'under offer') return 'status-offer';
-  if (value === 'let') return 'status-closed';
+  if (value === 'sold' || value === 'let / rented') return 'status-closed';
   return 'status-default';
 }
 
@@ -139,8 +139,8 @@ async function loadPropertyDetails() {
 
   var propertyQuery = supabase
     .from('properties')
-    .select('id, reference_number, title, description, price, currency_code, billing_period, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, availability, viewing_contact_name, viewing_contact_phone, viewing_contact_email, virtual_tour_link, youtube_link, branch_id, created_at')
-    .eq('status', 'Active')
+    .select('id, reference_number, title, description, price, currency_code, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, amenities, virtual_tour_link, youtube_link, branch_id, created_at')
+    .in('status', ['Active', 'Under Offer'])
     .limit(1);
 
   propertyQuery = id ? propertyQuery.eq('id', id) : propertyQuery.eq('reference_number', ref);
@@ -150,8 +150,16 @@ async function loadPropertyDetails() {
   }, []);
 
   if (!propertyResult.length) {
-    showStatus('This property is no longer available.', 'error');
-    return;
+    // Mock data fallback for visual testing
+    if (typeof getMockProperties === 'function') {
+      console.warn('Using mock property data for visual testing.');
+      var mockProps = getMockProperties();
+      var match = id ? mockProps.find(function (p) { return p.id === id; }) : null;
+      propertyResult = match ? [match] : [mockProps[0]];
+    } else {
+      showStatus('This property is no longer available.', 'error');
+      return;
+    }
   }
 
   detailsState.property = propertyResult[0];
@@ -179,8 +187,8 @@ async function loadPropertyDetails() {
     safeSelect('similar property candidates', function () {
       return supabase
         .from('properties')
-        .select('id, reference_number, title, price, currency_code, billing_period, purpose, property_type, area, status, availability, branch_id, created_at')
-        .eq('status', 'Active')
+        .select('id, reference_number, title, price, currency_code, purpose, property_type, area, status, branch_id, created_at')
+        .in('status', ['Active', 'Under Offer'])
         .neq('id', detailsState.property.id)
         .order('created_at', { ascending: false })
         .limit(12);
@@ -190,12 +198,28 @@ async function loadPropertyDetails() {
   detailsState.images = sortImages(results[0]);
   detailsState.branches = results[1];
 
+  // Mock fallback for branches and images on details page
+  if (!detailsState.branches.length && typeof getMockBranches === 'function') {
+    detailsState.branches = getMockBranches();
+  }
+  if (!detailsState.images.length && typeof getMockPropertyImages === 'function') {
+    var pid = detailsState.property.id;
+    detailsState.images = sortImages(getMockPropertyImages().filter(function (img) {
+      return String(img.property_id) === String(pid);
+    }));
+  }
+
   detailsState.appSettings = {};
   (results[2] || []).forEach(function (row) {
     detailsState.appSettings[row.setting_key] = row.setting_value || {};
   });
 
   var similarCandidates = results[3] || [];
+  if (!similarCandidates.length && typeof getMockProperties === 'function') {
+    similarCandidates = getMockProperties().filter(function (p) {
+      return p.id !== detailsState.property.id && (p.status === 'Active' || p.status === 'Under Offer');
+    });
+  }
   detailsState.similar = similarCandidates.filter(function (property) {
     return property.purpose === detailsState.property.purpose
       || property.property_type === detailsState.property.property_type;
@@ -211,6 +235,12 @@ async function loadPropertyDetails() {
         .in('property_id', similarIds)
         .order('display_order', { ascending: true });
     }, []);
+    // Mock fallback for similar images
+    if (!(similarImages && similarImages.length) && typeof getMockPropertyImages === 'function') {
+      similarImages = getMockPropertyImages().filter(function (img) {
+        return similarIds.indexOf(img.property_id) !== -1;
+      });
+    }
     detailsState.similarImages = similarImages || [];
   } else {
     detailsState.similarImages = [];
@@ -221,7 +251,7 @@ async function loadPropertyDetails() {
 }
 
 function updateSeo(property) {
-  document.title = property.title + ' | Real estate management';
+  document.title = property.title + ' | Hilltop Properties Zambia';
   var description = document.querySelector('meta[name="description"]');
   if (description && property.description) {
     description.setAttribute('content', String(property.description).slice(0, 155));
@@ -241,7 +271,7 @@ function renderGallery() {
       '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
       '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
       '</svg>',
-      '<span class="placeholder-text">Rental Property</span>',
+      '<span class="placeholder-text">Hilltop Property</span>',
       '</div>'
     ].join('');
     thumbnailRow.innerHTML = '';
@@ -255,7 +285,7 @@ function renderGallery() {
     '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
     '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
     '</svg>',
-    '<span class="placeholder-text">Rental Property</span>',
+    '<span class="placeholder-text">Hilltop Property</span>',
     '</div>'
   ].join('');
 
@@ -276,7 +306,6 @@ function renderFacts(property) {
     ['Square Metres', Number(property.square_metres || 0).toLocaleString('en-ZM')],
     ['Purpose', property.purpose],
     ['Property Type', property.property_type],
-    ['Availability', property.availability || 'Available now'],
     ['Area', property.area],
     ['Address', property.full_address || 'Available on request']
   ];
@@ -312,17 +341,19 @@ function renderMediaLinks(property) {
 function renderBranchContact() {
   var branch = getBranch();
   var contact = resolveContact();
-  var property = detailsState.property || {};
-  var contactName = property.viewing_contact_name || 'Real estate management';
-  var contactPhone = property.viewing_contact_phone || (branch && branch.contact_number) || contact.phone;
-  var contactEmail = property.viewing_contact_email || contact.email;
 
-  byId('branchContact').innerHTML = [
-    '<h3>' + escapeHtml(contactName) + '</h3>',
-    '<p>' + escapeHtml((branch && branch.address) || contact.address) + '</p>',
-    contactPhone ? '<p>' + escapeHtml(contactPhone) + '</p>' : '',
-    contactEmail ? '<p>' + escapeHtml(contactEmail) + '</p>' : ''
-  ].join('');
+  byId('branchContact').innerHTML = branch
+    ? [
+      '<h3>' + escapeHtml(branch.name) + ' Branch</h3>',
+      branch.address ? '<p>' + escapeHtml(branch.address) + '</p>' : '',
+      branch.contact_number ? '<p>' + escapeHtml(branch.contact_number) + '</p>' : ''
+    ].join('')
+    : [
+      '<h3>Hilltop Properties Zambia</h3>',
+      '<p>' + escapeHtml(contact.address) + '</p>',
+      '<p>' + escapeHtml(contact.phone) + '</p>',
+      '<p>' + escapeHtml(contact.email) + '</p>'
+    ].join('');
 }
 
 function renderSimilar() {
@@ -401,7 +432,7 @@ function renderSimilar() {
       '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
       '<polyline points="9 22 9 12 15 12 15 22"></polyline>',
       '</svg>',
-      '<span class="placeholder-text">Rental Property</span>',
+      '<span class="placeholder-text">Hilltop Property</span>',
       '</div>',
       imageMarkup,
       '<div class="property-card-badges">',
@@ -447,7 +478,7 @@ function renderDetails() {
   byId('propertyPrice').textContent = formatPrice(property.price, property.purpose, property.currency_code, property.billing_period);
   byId('propertyPurpose').textContent = property.purpose;
   byId('propertyType').textContent = property.property_type;
-  byId('propertyArea').textContent = property.area || 'Toney, Alabama';
+  byId('propertyArea').textContent = property.area || 'Zambia';
   byId('propertyDescription').textContent = property.description || 'Details available on request.';
 
   byId('detailsContent').classList.remove('hidden');
@@ -473,7 +504,7 @@ function setWhatsappFallback() {
   }
 
   var phone = String(contact.phone).replace(/[^0-9]/g, '');
-  var message = 'Hello Real estate management, I would like to schedule a viewing for property ' + property.reference_number + '.';
+  var message = 'Hello Hilltop Properties Zambia, I would like to enquire about property ' + property.reference_number + '.';
   fallback.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
   fallback.classList.remove('hidden');
 }
@@ -510,7 +541,7 @@ function validateEnquiryPayload(name, phone, email, branchId, notes, property) {
   if (!branchId) return 'No branch is available to receive this enquiry.';
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email address.';
   if (notes.length > 1000) return 'Message must be 1000 characters or less.';
-  if (!property || property.status !== 'Active') {
+  if (!property || ['Active', 'Under Offer'].indexOf(property.status) === -1) {
     return 'This property is not available for public enquiry.';
   }
   return '';
@@ -530,7 +561,7 @@ async function submitEnquiry(event) {
   var honeypot = byId('enquiryWebsiteUrl').value.trim();
 
   if (honeypot) {
-    setEnquiryMessage('Thank you. Your viewing request has been sent. Real estate management will contact you shortly.', 'success');
+    setEnquiryMessage('Thank you. Your enquiry has been sent. Hilltop Properties will contact you shortly.', 'success');
     setTimeout(closeEnquiryModal, 1100);
     return;
   }
@@ -565,7 +596,7 @@ async function submitEnquiry(event) {
 
     if (result.error) throw result.error;
 
-    setEnquiryMessage('Thank you. Your viewing request has been sent. Real estate management will contact you shortly.', 'success');
+    setEnquiryMessage('Thank you. Your enquiry has been sent. Hilltop Properties will contact you shortly.', 'success');
     byId('enquiryForm').reset();
     setTimeout(closeEnquiryModal, 1400);
   } catch (error) {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="View rental property details in Toney, Alabama." />
-  <title>Rental Details | Real estate management</title>
+  <meta name="description" content="View public property details from Hilltop Properties Zambia." />
+  <title>Property Details | Hilltop Properties Zambia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -21,11 +21,11 @@
       <a href="listings.html">Listings</a>
       <a href="index.html#contact">Contact</a>
     </nav>
-    <a class="brand" href="index.html" aria-label="Real estate management home">
-      REAL ESTATE MANAGEMENT
+    <a class="brand" href="index.html" aria-label="Hilltop Properties Zambia home">
+      HILLTOP
     </a>
     <div class="header-actions">
-      <button class="btn header-enquiry-btn" type="button" id="headerEnquiryButton">Schedule a Viewing</button>
+      <button class="btn header-enquiry-btn" type="button" id="headerEnquiryButton">Enquire</button>
       <button class="nav-toggle" id="navToggle" type="button" aria-controls="siteNav" aria-expanded="false"
         aria-label="Open menu">
         <span class="hamburger-line"></span>
@@ -42,7 +42,7 @@
     <section class="details-hero hidden" id="detailsContent">
       <div class="details-gallery">
         <div class="main-image" id="mainImage">
-          <span>Rental Property</span>
+          <span>Hilltop Property</span>
         </div>
         <div class="thumbnail-row" id="thumbnailRow"></div>
       </div>
@@ -60,7 +60,7 @@
           <span id="propertyArea">Area</span>
         </div>
         <div class="details-actions">
-          <button class="btn primary" type="button" id="detailsEnquiryButton">Schedule a Viewing</button>
+          <button class="btn primary" type="button" id="detailsEnquiryButton">Enquire About This Property</button>
           <a class="btn secondary detail-contact-link" href="index.html#contact">Contact Office</a>
         </div>
       </article>
@@ -84,7 +84,7 @@
       </article>
 
       <article class="details-panel branch-panel">
-        <h2>Viewing Contact</h2>
+        <h2>Branch Contact</h2>
         <div id="branchContact"></div>
       </article>
     </section>
@@ -100,11 +100,11 @@
 
   <div class="modal-overlay" id="enquiryModal" aria-hidden="true">
     <div class="modal-card enquiry-modal-card" role="dialog" aria-modal="true" aria-labelledby="enquiryModalTitle">
-      <button class="modal-close" type="button" id="enquiryModalClose" aria-label="Close viewing form">&times;</button>
+      <button class="modal-close" type="button" id="enquiryModalClose" aria-label="Close enquiry form">&times;</button>
       <div class="modal-heading">
-        <p class="eyebrow">Viewing</p>
-        <h2 id="enquiryModalTitle">Schedule a Viewing</h2>
-        <p id="enquiryPropertyDisplay">Choose a rental and our team will contact you to arrange a time.</p>
+        <p class="eyebrow">Enquiry</p>
+        <h2 id="enquiryModalTitle">Send Property Enquiry</h2>
+        <p id="enquiryPropertyDisplay">Tell us what you are looking for and our team will contact you.</p>
       </div>
 
       <form class="enquiry-form" id="enquiryForm" novalidate>
@@ -136,13 +136,13 @@
         <div class="enquiry-message" id="enquiryMessage" role="status" aria-live="polite"></div>
         <a class="whatsapp-fallback hidden" id="enquiryWhatsappFallback" href="#" target="_blank" rel="noopener">Contact us on WhatsApp</a>
 
-        <button class="btn primary enquiry-submit" type="submit" id="enquirySubmit">Request Viewing</button>
+        <button class="btn primary enquiry-submit" type="submit" id="enquirySubmit">Submit Enquiry</button>
       </form>
     </div>
   </div>
 
   <footer class="site-footer">
-    <p>&copy; <span id="year"></span> Real estate management. Toney, Alabama.</p>
+    <p>&copy; <span id="year"></span> Hilltop Properties Zambia. Public website preview.</p>
     <a href="login.html">Admin Login</a>
   </footer>
 
