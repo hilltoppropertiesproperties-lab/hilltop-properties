@@ -17,7 +17,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="assets/fonts/proda-sans-medium/proda-sans-medium.css" />
   <link rel="stylesheet" href="assets/fonts/concise-regular-demo/concise-regular-demo.css" />
-  <link rel="stylesheet" href="website.css" />
+  <link rel="stylesheet" href="website.css?v=20260720-6" />
 </head>
 
 <body class="public-home">
@@ -110,12 +110,18 @@
           <div class="featured-properties-grid" id="featuredGrid"></div>
           <div class="empty-state" id="featuredEmpty">No featured properties are listed yet.</div>
 
+          <div class="featured-properties-action exclusive-properties-action featured-listings-action">
+            <a class="btn primary view-more-btn exclusive-properties-cta featured-listings-cta" href="listings.html">
+              <span>VIEW PROPERTIES</span>
+            </a>
+          </div>
+
           <section class="more-properties-strip" id="morePropertiesSection" aria-labelledby="morePropertiesTitle" hidden>
             <div class="more-properties-strip__header">
               <div class="more-properties-strip__copy">
-                <p class="more-properties-strip__label">EXPLORE MORE</p>
-                <h3 id="morePropertiesTitle">More Properties To Discover</h3>
-                <p>Browse more available homes, apartments, land, and commercial opportunities.</p>
+                <p class="more-properties-strip__label">EXCLUSIVE PROPERTY</p>
+                <h3 id="morePropertiesTitle">Exclusive Property Collection</h3>
+                <p>A curated selection of distinctive homes, land, and investment opportunities chosen for clients seeking something exceptional.</p>
               </div>
               <div class="more-properties-strip__controls" aria-label="More property navigation">
                 <button class="more-properties-strip__arrow" id="morePropertiesPrev" type="button" aria-label="View previous property" disabled>
@@ -134,9 +140,9 @@
             </div>
           </section>
 
-          <div class="featured-properties-action">
-            <a class="btn primary view-more-btn" href="listings.html">
-              <span>View More Properties</span>
+          <div class="featured-properties-action exclusive-properties-action">
+            <a class="btn primary view-more-btn exclusive-properties-cta" href="listings.html">
+              <span>GO EXCLUSIVE</span>
               <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
