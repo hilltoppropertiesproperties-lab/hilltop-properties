@@ -39,7 +39,7 @@ order by status;
 
 select count(*) as active_or_under_offer_property_count
 from public.properties
-where status in ('Active', 'Under Offer');
+where status = 'Active';
 
 select count(*) as property_image_count
 from public.property_images;
@@ -57,7 +57,7 @@ select
   p.branch_id
 from public.properties p
 left join public.branches b on b.id = p.branch_id
-where p.status in ('Active', 'Under Offer')
+where p.status = 'Active'
   and b.id is null;
 
 -- ============================================================
@@ -77,7 +77,7 @@ select
 from public.properties p
 join public.branches b on b.id = p.branch_id
 left join public.property_images pi on pi.property_id = p.id
-where p.status in ('Active', 'Under Offer')
+where p.status = 'Active'
 group by
   p.id,
   p.reference_number,

@@ -13,201 +13,10 @@
    come from a backend database via an API call.
 ══════════════════════════════════════════════════════════════ */
 
-var properties = [
-  {
-    id: 1,
-    ref:       'HT-LSK-001',
-    title:     '4-Bedroom Executive House in Kabulonga',
-    purpose:   'For Sale',
-    type:      'House',
-    branch:    'Lusaka',
-    area:      'Kabulonga',
-    address:   'Plot 18, Lilayi Road, Kabulonga, Lusaka',
-    price:     'ZMW 2,400,000',
-    status:    'Active',
-    beds:      4, baths: 3, garages: 2, size: 320,
-    featured:  'Yes',
-    amenities: 'Pool, Garden, Security, Borehole',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Stunning executive residence in the prestigious Kabulonga area. Features high ceilings, modern finishes, and a private garden.',
-    coverImage: ''
-  },
-  {
-    id: 2,
-    ref:       'HT-LSK-002',
-    title:     '2-Bedroom Apartment in Levy Junction',
-    purpose:   'For Rent',
-    type:      'Apartment',
-    branch:    'Lusaka',
-    area:      'Levy Junction',
-    address:   'Levy Junction Complex, Lusaka',
-    price:     'ZMW 8,500 / month',
-    status:    'Active',
-    beds:      2, baths: 2, garages: 1, size: 95,
-    featured:  'No',
-    amenities: 'Gym, Security, Parking',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Modern apartment in the Levy Junction complex. Perfect for young professionals.',
-    coverImage: ''
-  },
-  {
-    id: 3,
-    ref:       'HT-LSK-003',
-    title:     'Commercial Office Space — Cairo Road',
-    purpose:   'For Rent',
-    type:      'Commercial',
-    branch:    'Lusaka',
-    area:      'Cairo Road',
-    address:   'Cairo Road Central, Lusaka',
-    price:     'ZMW 22,000 / month',
-    status:    'Under Offer',
-    beds:      0, baths: 2, garages: 4, size: 450,
-    featured:  'No',
-    amenities: 'Parking, Reception, Server Room',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Premium Grade-A office space in the heart of Lusaka\'s business district.',
-    coverImage: ''
-  },
-  {
-    id: 4,
-    ref:       'HT-LSK-004',
-    title:     '5-Bedroom Mansion — Roma',
-    purpose:   'For Sale',
-    type:      'House',
-    branch:    'Lusaka',
-    area:      'Roma',
-    address:   'Roma, Lusaka',
-    price:     'ZMW 5,800,000',
-    status:    'Sold',
-    beds:      5, baths: 4, garages: 3, size: 560,
-    featured:  'No',
-    amenities: 'Pool, Garden, Staff Quarters, Solar Power',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Grand family mansion in the sought-after Roma neighbourhood.',
-    coverImage: ''
-  },
-  {
-    id: 5,
-    ref:       'HT-LSK-005',
-    title:     '1-Acre Residential Plot — Chalala',
-    purpose:   'For Sale',
-    type:      'Land',
-    branch:    'Lusaka',
-    area:      'Chalala',
-    address:   'Chalala Residential Area, Lusaka',
-    price:     'ZMW 980,000',
-    status:    'Active',
-    beds:      0, baths: 0, garages: 0, size: 4047,
-    featured:  'No',
-    amenities: 'Title Deed, Serviced',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Prime residential plot in Chalala. Fully serviced with tarred road access.',
-    coverImage: ''
-  },
-  {
-    id: 6,
-    ref:       'HT-LSK-006',
-    title:     '3-Bedroom House in Woodlands',
-    purpose:   'For Sale',
-    type:      'House',
-    branch:    'Lusaka',
-    area:      'Woodlands',
-    address:   'Woodlands Extension, Lusaka',
-    price:     'ZMW 1,350,000',
-    status:    'Draft',
-    beds:      3, baths: 2, garages: 1, size: 210,
-    featured:  'No',
-    amenities: 'Garden, Borehole',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Comfortable family home in a quiet Woodlands street. Recently renovated.',
-    coverImage: ''
-  },
-  {
-    id: 7,
-    ref:       'HT-LVN-001',
-    title:     '3-Bedroom Cottage — Livingstone Central',
-    purpose:   'For Rent',
-    type:      'House',
-    branch:    'Livingstone',
-    area:      'Livingstone Central',
-    address:   'Mosi-oa-Tunya Road, Livingstone',
-    price:     'ZMW 6,200 / month',
-    status:    'Let / Rented',
-    beds:      3, baths: 2, garages: 1, size: 150,
-    featured:  'No',
-    amenities: 'Garden, Security',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Charming cottage ideal for tourism or expat use, close to the Zambezi.',
-    coverImage: ''
-  },
-  {
-    id: 8,
-    ref:       'HT-LVN-002',
-    title:     'Riverside Lodge Plot — Victoria Falls',
-    purpose:   'For Sale',
-    type:      'Land',
-    branch:    'Livingstone',
-    area:      'Victoria Falls',
-    address:   'Riverside Area, Livingstone',
-    price:     'ZMW 3,200,000',
-    status:    'Active',
-    beds:      0, baths: 0, garages: 0, size: 8000,
-    featured:  'Yes',
-    amenities: 'River Frontage, Title Deed',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Rare riverside plot with uninterrupted views of the Zambezi. Exceptional investment opportunity.',
-    coverImage: ''
-  },
-  {
-    id: 9,
-    ref:       'HT-LVN-003',
-    title:     '2-Bedroom Apartment — Livingstone Central',
-    purpose:   'For Rent',
-    type:      'Apartment',
-    branch:    'Livingstone',
-    area:      'Livingstone Central',
-    address:   'Independence Avenue, Livingstone',
-    price:     'ZMW 5,500 / month',
-    status:    'Active',
-    beds:      2, baths: 1, garages: 1, size: 88,
-    featured:  'No',
-    amenities: 'Security, Parking',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Neat, well-maintained apartment near the Livingstone town centre.',
-    coverImage: ''
-  },
-  {
-    id: 10,
-    ref:       'HT-LVN-004',
-    title:     'Commercial Guesthouse — Maramba',
-    purpose:   'For Sale',
-    type:      'Commercial',
-    branch:    'Livingstone',
-    area:      'Maramba',
-    address:   'Maramba Area, Livingstone',
-    price:     'ZMW 4,800,000',
-    status:    'Under Offer',
-    beds:      8, baths: 8, garages: 4, size: 600,
-    featured:  'Yes',
-    amenities: 'Pool, Restaurant Space, Conference Room',
-    virtualTour: '',
-    youtube:   '',
-    description: 'Established guesthouse with full hospitality infrastructure near Victoria Falls.',
-    coverImage: ''
-  }
-];
+var properties = [];
 
-// Running ID counter so new properties get unique IDs
-var nextId = 11;
+// Running ID counter retained for UI-only identifiers.
+var nextId = 1;
 
 // Track which images are staged for the current modal session
 var stagedImages = [];
@@ -296,27 +105,21 @@ var isPropertySavePending = false;
 var PROPERTY_CATEGORY_CONFIG = {
   all: {
     heading: 'All Properties',
-    subtitle: 'Manage all property listings for Hilltop Properties Zambia.',
+    subtitle: 'Manage rental homes and apartments in Toney, Alabama.',
     emptyTitle: 'No properties were found.',
     formType: ''
   },
   house: {
     heading: 'Houses',
-    subtitle: 'Manage house listings across all Hilltop branches.',
+    subtitle: 'Manage house rentals in Toney, Alabama.',
     emptyTitle: 'No house listings were found.',
     formType: 'House'
   },
   apartment: {
     heading: 'Apartments',
-    subtitle: 'Manage apartment listings across all Hilltop branches.',
+    subtitle: 'Manage apartment rentals in Toney, Alabama.',
     emptyTitle: 'No apartment listings were found.',
     formType: 'Apartment'
-  },
-  land: {
-    heading: 'Land',
-    subtitle: 'Manage land listings across all Hilltop branches.',
-    emptyTitle: 'No land listings were found.',
-    formType: 'Land'
   }
 };
 
@@ -357,7 +160,7 @@ function updatePriceCurrencyPrefix() {
   if (!currencySelect || !prefix || !wrap) return;
 
   var code = window.HilltopCurrency.normalizeCurrencyCode(currencySelect.value);
-  prefix.textContent = code === 'USD' ? '$' : 'K';
+  prefix.textContent = '$';
   wrap.dataset.currency = code;
 }
 
@@ -400,7 +203,7 @@ function getCategoryCounts() {
       counts[category] += 1;
     }
     return counts;
-  }, { all: 0, house: 0, apartment: 0, land: 0 });
+  }, { all: 0, house: 0, apartment: 0 });
 }
 
 function updateCategoryInterface() {
@@ -410,7 +213,7 @@ function updateCategoryInterface() {
 
   propertyPageTitle.textContent = config.heading;
   propertyPageSubtitle.textContent = config.subtitle;
-  document.title = config.heading + ' — Property Management — Hilltop Properties Zambia';
+  document.title = config.heading + ' — Property Management — Real estate management';
 
   document.querySelectorAll('.property-category-tab').forEach(function(tab) {
     var isActive = tab.dataset.category === currentCategory;
@@ -431,7 +234,6 @@ function updateCategoryInterface() {
   document.getElementById('categoryCountAll').textContent = counts.all;
   document.getElementById('categoryCountHouse').textContent = counts.house;
   document.getElementById('categoryCountApartment').textContent = counts.apartment;
-  document.getElementById('categoryCountLand').textContent = counts.land;
 
   emptyStateTitle.textContent = config.emptyTitle;
   emptyStateText.textContent = 'Try adjusting your search or filters, or add a new property.';
@@ -690,7 +492,7 @@ function mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty
     ref: record.reference_number,
     title: record.title,
     description: record.description || '',
-    price: formatPrice(record.price, record.purpose, record.currency_code),
+    price: formatPrice(record.price, record.purpose, record.currency_code, record.billing_period),
     priceValue: Number(record.price || 0),
     currencyCode: window.HilltopCurrency.normalizeCurrencyCode(record.currency_code),
     purpose: record.purpose,
@@ -709,6 +511,10 @@ function mapSupabaseProperty(record, branchLookup, staffLookup, imagesByProperty
     featured: record.featured ? 'Yes' : 'No',
     exclusive: record.exclusive_property ? 'Yes' : 'No',
     amenities: Array.isArray(record.amenities) ? record.amenities.join(', ') : '',
+    availability: record.availability || 'Available now',
+    viewingContactName: record.viewing_contact_name || '',
+    viewingContactPhone: record.viewing_contact_phone || '',
+    viewingContactEmail: record.viewing_contact_email || '',
     virtualTour: record.virtual_tour_link || '',
     youtube: record.youtube_link || '',
     coverImage: coverImage ? coverImage.image_url : '',
@@ -824,7 +630,7 @@ async function loadStaffForProperties() {
 async function loadPropertiesFromSupabase() {
   var response = await getSupabaseClient()
     .from('properties')
-    .select('id, reference_number, title, description, price, currency_code, purpose, property_type, branch_id, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, exclusive_property, amenities, virtual_tour_link, youtube_link, assigned_agent_id, created_at, updated_at')
+    .select('id, reference_number, title, description, price, currency_code, billing_period, purpose, property_type, branch_id, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, exclusive_property, amenities, availability, viewing_contact_name, viewing_contact_phone, viewing_contact_email, virtual_tour_link, youtube_link, assigned_agent_id, created_at, updated_at')
     .order('created_at', { ascending: false });
 
   if (response.error) {
@@ -862,7 +668,8 @@ async function loadPropertyDocumentsFromSupabase() {
 
 async function loadPropertyModuleData() {
   if (!getSupabaseClient()) {
-    showToast('Supabase is not available. Showing development sample property data.', 'error');
+    properties = [];
+    showToast('The new Supabase project is not configured. Property data is unavailable.', 'error');
     renderProperties();
     return;
   }
@@ -919,7 +726,8 @@ async function loadPropertyModuleData() {
     renderProperties();
   } catch (error) {
     console.warn('Properties Supabase loading failed.', error);
-    showToast(error.message || 'Unable to load properties from Supabase. Showing development sample data.', 'error');
+    properties = [];
+    showToast(error.message || 'Unable to load properties from the new Supabase project.', 'error');
     renderProperties();
   }
 }
@@ -950,12 +758,12 @@ function getPropertyPayloadFromForm() {
   priceInput.classList.remove('error');
   if (!window.HilltopCurrency.isSupportedCurrency(currencyCode)) {
     currencyInput.classList.add('error');
-    throw new Error('Please select ZMW or USD as the listing currency.');
+    throw new Error('USD is required for rental listings.');
   }
   currencyInput.classList.remove('error');
   if (!purpose) throw new Error('Purpose is required.');
   if (!propertyType) throw new Error('Property type is required.');
-  if (['House', 'Apartment', 'Commercial', 'Land'].indexOf(propertyType) === -1) {
+  if (['House', 'Apartment'].indexOf(propertyType) === -1) {
     throw new Error('Please select a supported property type.');
   }
   if (!branchId) throw new Error('Branch is required.');
@@ -967,8 +775,9 @@ function getPropertyPayloadFromForm() {
     title: title,
     description: document.getElementById('fDesc').value.trim() || null,
     price: priceResult.value,
-    currency_code: currencyCode,
-    purpose: purpose,
+    currency_code: 'USD',
+    billing_period: 'month',
+    purpose: 'For Rent',
     property_type: propertyType,
     branch_id: branchId,
     area: document.getElementById('fArea').value.trim(),
@@ -981,6 +790,10 @@ function getPropertyPayloadFromForm() {
     featured: document.getElementById('fFeatured').value === 'Yes',
     exclusive_property: document.getElementById('fExclusive').value === 'Yes',
     amenities: parseAmenities(document.getElementById('fAmenities').value),
+    availability: document.getElementById('fAvailability').value.trim(),
+    viewing_contact_name: document.getElementById('fViewingContactName').value.trim() || null,
+    viewing_contact_phone: document.getElementById('fViewingContactPhone').value.trim() || null,
+    viewing_contact_email: document.getElementById('fViewingContactEmail').value.trim() || null,
     virtual_tour_link: document.getElementById('fVirtualTour').value.trim() || null,
     youtube_link: document.getElementById('fYoutube').value.trim() || null,
     assigned_agent_id: assignedAgentId || null
@@ -1215,8 +1028,7 @@ function getBadgeClass(status) {
     'Draft':       'badge-draft',
     'Active':      'badge-active',
     'Under Offer': 'badge-offer',
-    'Sold':        'badge-sold',
-    'Let / Rented':'badge-let',
+    'Let':         'badge-let',
     'Withdrawn':   'badge-withdrawn',
     'Archived':    'badge-withdrawn'
   };
@@ -1249,6 +1061,13 @@ function renderProperties() {
 
   // Show or hide empty state
   var isEmpty = filtered.length === 0;
+  if (isEmpty && properties.length === 0) {
+    emptyStateTitle.textContent = 'No properties have been added yet.';
+    emptyStateText.textContent = 'Add your first rental property.';
+  } else if (isEmpty) {
+    emptyStateTitle.textContent = 'No properties were found.';
+    emptyStateText.textContent = 'Try adjusting your search or filters.';
+  }
   emptyState.style.display = isEmpty ? 'flex' : 'none';
   propTable.style.display  = isEmpty ? 'none' : 'table';
   propertyPagination.hidden = isEmpty;
@@ -1370,7 +1189,7 @@ function updateStats(filtered) {
   statTotal.textContent      = filtered.length;
   statActive.textContent     = filtered.filter(function(p){ return p.status === 'Active'; }).length;
   statUnderOffer.textContent = filtered.filter(function(p){ return p.status === 'Under Offer'; }).length;
-  statSoldLet.textContent    = filtered.filter(function(p){ return p.status === 'Sold' || p.status === 'Let / Rented'; }).length;
+  statSoldLet.textContent    = filtered.filter(function(p){ return p.status === 'Let'; }).length;
 }
 
 
@@ -1733,6 +1552,10 @@ function openModal(mode, id) {
     document.getElementById('fFeatured').value = p.featured;
     document.getElementById('fExclusive').value = isExclusiveProperty(p) ? 'Yes' : 'No';
     document.getElementById('fAmenities').value = p.amenities;
+    document.getElementById('fAvailability').value = p.availability || 'Available now';
+    document.getElementById('fViewingContactName').value = p.viewingContactName || '';
+    document.getElementById('fViewingContactPhone').value = p.viewingContactPhone || '';
+    document.getElementById('fViewingContactEmail').value = p.viewingContactEmail || '';
     document.getElementById('fVirtualTour').value = p.virtualTour;
     document.getElementById('fYoutube').value  = p.youtube;
     document.getElementById('fStatus').value   = p.status;
@@ -1744,12 +1567,19 @@ function openModal(mode, id) {
     modalTitle.textContent = 'Add New Property';
     editIdField.value = '';
     propForm.reset();
-    document.getElementById('fCurrency').value = 'ZMW';
-    document.getElementById('fCurrency').dataset.originalCurrency = 'ZMW';
-    document.getElementById('fType').value = PROPERTY_CATEGORY_CONFIG[currentCategory].formType;
+    document.getElementById('fCurrency').value = 'USD';
+    document.getElementById('fCurrency').dataset.originalCurrency = 'USD';
+    document.getElementById('fPurpose').value = 'For Rent';
+    document.getElementById('fType').value = ['House', 'Apartment'].includes(PROPERTY_CATEGORY_CONFIG[currentCategory].formType)
+      ? PROPERTY_CATEGORY_CONFIG[currentCategory].formType
+      : 'House';
+    document.getElementById('fArea').value = 'Toney';
+    document.getElementById('fAvailability').value = 'Available now';
     document.getElementById('fExclusive').value = 'No';
     if (isCurrentUserBranchManager() && (window.hilltopCurrentUser || {}).branch_id) {
       document.getElementById('fBranch').value = window.hilltopCurrentUser.branch_id;
+    } else if (propertyBranches.length === 1) {
+      document.getElementById('fBranch').value = propertyBranches[0].id;
     }
     populatePropertyAgentSelect();
     highlightWorkflowStep('Draft');
@@ -1834,7 +1664,7 @@ document.getElementById('fBranch').addEventListener('change', function() {
 document.getElementById('fCurrency').addEventListener('change', function() {
   var warning = document.getElementById('currencyChangeWarning');
   var isEditing = Boolean(editIdField.value);
-  var originalCurrency = this.dataset.originalCurrency || 'ZMW';
+  var originalCurrency = this.dataset.originalCurrency || 'USD';
   updatePriceCurrencyPrefix();
   warning.hidden = !isEditing || this.value === originalCurrency;
 });
@@ -1851,7 +1681,7 @@ propForm.addEventListener('submit', async function(e) {
   if (isPropertySavePending) return;
 
   // Basic validation
-  var required = ['fTitle', 'fRef', 'fCurrency', 'fPrice', 'fPurpose', 'fType', 'fBranch', 'fArea', 'fStatus'];
+  var required = ['fTitle', 'fRef', 'fCurrency', 'fPrice', 'fPurpose', 'fType', 'fBranch', 'fArea', 'fAvailability', 'fStatus'];
   var valid = true;
   required.forEach(function(fieldId) {
     var el = document.getElementById(fieldId);

@@ -62,7 +62,7 @@ with check (
       select 1
       from public.properties p
       where p.id = leads.property_id
-        and p.status in ('Active', 'Under Offer')
+        and p.status = 'Active'
     )
   )
 );
@@ -84,7 +84,7 @@ create policy "Anon can read public active properties"
 on public.properties
 for select
 to anon
-using (status in ('Active', 'Under Offer'));
+using (status = 'Active');
 
 drop policy if exists "Anon can read public property images" on public.property_images;
 create policy "Anon can read public property images"
@@ -96,7 +96,7 @@ using (
     select 1
     from public.properties p
     where p.id = property_images.property_id
-      and p.status in ('Active', 'Under Offer')
+      and p.status = 'Active'
   )
 );
 

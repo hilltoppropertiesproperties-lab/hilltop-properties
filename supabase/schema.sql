@@ -1,5 +1,5 @@
 -- ============================================================
--- HILLTOP PROPERTIES ZAMBIA - SUPABASE SCHEMA
+-- REAL ESTATE MANAGEMENT - SUPABASE SCHEMA
 -- Phase 1 foundation for the plain HTML/CSS/JavaScript admin app.
 -- ============================================================
 
@@ -55,8 +55,10 @@ create table if not exists public.properties (
   title text not null,
   description text,
   price numeric(14,2) not null default 0,
-  purpose text not null check (purpose in ('For Sale', 'For Rent')),
-  property_type text not null check (property_type in ('House', 'Apartment', 'Commercial', 'Land')),
+  currency_code text not null default 'USD' check (currency_code = 'USD'),
+  billing_period text not null default 'month' check (billing_period = 'month'),
+  purpose text not null default 'For Rent' check (purpose = 'For Rent'),
+  property_type text not null check (property_type in ('House', 'Apartment')),
   branch_id uuid not null references public.branches(id) on delete restrict,
   area text not null,
   full_address text,
@@ -65,10 +67,15 @@ create table if not exists public.properties (
   garages integer not null default 0 check (garages >= 0),
   square_metres numeric(12,2) not null default 0 check (square_metres >= 0),
   status text not null default 'Draft' check (
-    status in ('Draft', 'Active', 'Under Offer', 'Sold', 'Let / Rented', 'Withdrawn', 'Archived')
+    status in ('Draft', 'Active', 'Under Offer', 'Let', 'Withdrawn', 'Archived')
   ),
   featured boolean not null default false,
+  exclusive_property boolean not null default false,
   amenities text[] not null default '{}',
+  availability text not null default 'Available now',
+  viewing_contact_name text,
+  viewing_contact_phone text,
+  viewing_contact_email text,
   virtual_tour_link text,
   youtube_link text,
   assigned_agent_id uuid references public.staff_users(id) on delete set null,

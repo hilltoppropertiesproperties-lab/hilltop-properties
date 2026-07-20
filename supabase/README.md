@@ -1,82 +1,100 @@
-# Hilltop Properties Zambia Supabase Foundation
+# Real estate management Supabase setup
 
-This folder prepares the plain HTML/CSS/JavaScript admin dashboard for a future Supabase connection.
+This copied site must use a new, empty Supabase project. None of these scripts
+connect to or modify the original Hilltop project.
 
-No React, Next.js, Vite, npm, backend server, or database client rewrite is required for this phase.
+## New-project SQL order
 
-## Files
+Run these files in the new project's SQL Editor, in order:
 
-- `schema.sql` creates the phase-1 database tables, constraints, indexes, and update triggers.
-- `rls-policies.sql` enables Row Level Security and adds starter authenticated-user policies.
-- `seed.sql` inserts realistic sample branches, staff users, properties, leads, documents, images, and activity logs.
+1. `schema.sql`
+2. `settings-foundation.sql`
+3. `cms-foundation.sql`
+4. `lead-communication-logs.sql`
+5. `property-exclusive-controls.sql`
+6. `property-currency-support.sql`
+7. `property-services-cms.sql`
+8. `services-showcase-cms.sql`
+9. `team-members-setup.sql`
+10. `cms-testimonial-backgrounds.sql`
+11. `why-hilltop-hero-settings.sql`
+12. `hero-video-cms-policies.sql`
+13. `rls-policies.sql`
+14. `security-hardening.sql`
+15. `storage-setup.sql`
+16. `cms-media-storage.sql`
+17. `public-website-read-policies.sql`
+18. `public-enquiry-policies.sql`
+19. `seed.sql`
 
-## Setup Order In Supabase
+`seed.sql` creates only the `Toney, Alabama` location and safe company
+settings. It deliberately creates no properties, images, leads, or staff.
 
-1. Open your Supabase project.
-2. Go to **SQL Editor**.
-3. Paste and run `schema.sql`.
-4. Confirm `staff_users` exists in **Table Editor**.
-5. If this is a fresh project, skip `add-auth-user-id-to-staff-users.sql` because `schema.sql` already includes `auth_user_id`.
-6. If your `staff_users` table existed before the Auth link was added and is missing `auth_user_id`, paste and run `add-auth-user-id-to-staff-users.sql`.
-7. Paste and run `rls-policies.sql`.
-8. Paste and run `seed.sql`.
+`add-auth-user-id-to-staff-users.sql` is needed only if a pre-existing
+`staff_users` table is missing `auth_user_id`. A fresh project created with
+`schema.sql` does not need it. The optional sample-data file inserts nothing.
 
-Do not run `add-auth-user-id-to-staff-users.sql` before `schema.sql`. That patch depends on `public.staff_users` already existing.
+## Storage buckets
 
-## Admin Account Setup
+The SQL creates these buckets used by the existing dashboard:
 
-This is an admin portal. Do not add a public sign-up page. Staff accounts should be created manually by the system administrator.
+- `property-images` (public listing photos)
+- `property-documents` (private dashboard documents)
+- `cms-media`
+- `service-illustrations`
+- `team-members`
 
-1. Go to the Supabase Dashboard.
-2. Open **Authentication -> Users**.
-3. Add a new user manually.
-4. Copy the Auth user UID.
-5. Open **SQL Editor** and link that Auth user to `public.staff_users`:
+Property uploads in `properties.js` use `property-images`; because the browser
+client is created with the new project's URL/key, uploads cannot reach the old
+project.
+
+## Admin account
+
+Create staff accounts manually in **Authentication → Users**. Then add a
+matching dashboard profile, using the new Auth user's UID and the Toney branch:
 
 ```sql
-update public.staff_users
-set auth_user_id = 'PASTE_AUTH_USER_UID_HERE'
-where email = 'admin@hilltopproperties.co.zm';
+insert into public.staff_users (
+  full_name,
+  email,
+  auth_user_id,
+  phone,
+  role,
+  branch_id,
+  is_active
+)
+select
+  'Admin User',
+  'admin@example.com',
+  'PASTE_NEW_AUTH_USER_UID_HERE'::uuid,
+  null,
+  'super_admin',
+  id,
+  true
+from public.branches
+where name = 'Toney, Alabama';
 ```
 
-The `auth_user_id` link is the bridge between Supabase Auth and the `staff_users` profile table. Strict branch and role-based RLS will use this relationship later.
-6. Test login using `login.html`.
+Do not create a public sign-up page and never place a service-role key in the
+browser.
 
-## Frontend Config
+## Frontend connection
 
-Open `supabase-config.js` and replace only these placeholders:
+Edit `supabase-config.js` and replace only these placeholders with the new
+project values:
 
 ```js
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY";
+const SUPABASE_URL = "https://YOUR_NEW_PROJECT_REF.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_NEW_PROJECT_PUBLISHABLE_OR_ANON_KEY";
 ```
 
-Use your Supabase project URL and publishable/anon key. Do not use secret keys in frontend code.
+Until both values are replaced, the browser deliberately creates no Supabase
+client and shows empty/error states instead of sample property records.
 
-## Security Notes
+## Visibility rule
 
-- Do not put a `service_role` key in frontend code.
-- Use only the publishable/anon key in `supabase-config.js`.
-- The starter RLS policies are intentionally simple for the first connection phase.
-- Later, policies should be tightened by mapping Supabase Auth users to `staff_users` records and checking staff roles and branch access.
-
-## Frontend Loading Order
-
-When you are ready to connect Module 2, load scripts in this order:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="auth-guard.js"></script>
-<script src="properties.js"></script>
-```
-
-## Testing Login
-
-1. Open `login.html` with VS Code Live Server.
-2. Sign in with the test admin email and password you created in Supabase Auth.
-3. A successful login redirects to `index.html`.
-4. Open `properties.html` after login to confirm the protected property management page loads.
-5. Click **Logout** in the sidebar footer to return to `login.html`.
-
-For now, `script.js` and `properties.js` still use local sample data. The next step is to update `properties.js` carefully so it can read from Supabase while keeping a demo fallback.
+The dashboard uses the authenticated policy `using (true)` for property reads,
+so Draft, Active, Archived, Under Offer, Let, and Withdrawn records remain
+available to staff. The public JavaScript queries add `status = 'Active'`, and
+the anonymous RLS policies independently enforce the same condition for
+properties, property images, featured-property references, and viewing leads.

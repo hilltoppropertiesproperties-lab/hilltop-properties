@@ -1,5 +1,5 @@
 -- ============================================================
--- HILLTOP PROPERTIES ZAMBIA - STORAGE SETUP
+-- REAL ESTATE MANAGEMENT - STORAGE SETUP
 -- Phase 3C: property images and private property documents.
 --
 -- Run this manually in the Supabase SQL Editor before testing
@@ -20,7 +20,7 @@ set public = excluded.public;
 -- Public read is allowed because property listing photos may
 -- appear on the public website later.
 -- Authenticated users can upload and update objects.
--- Delete is intentionally not added in this slice.
+-- Authenticated dashboard users may also remove replaced images.
 -- ============================================================
 
 drop policy if exists "Public can read property images" on storage.objects;
@@ -44,6 +44,13 @@ for update
 to authenticated
 using (bucket_id = 'property-images')
 with check (bucket_id = 'property-images');
+
+drop policy if exists "Authenticated users can delete property images" on storage.objects;
+create policy "Authenticated users can delete property images"
+on storage.objects
+for delete
+to authenticated
+using (bucket_id = 'property-images');
 
 -- ============================================================
 -- PROPERTY DOCUMENTS

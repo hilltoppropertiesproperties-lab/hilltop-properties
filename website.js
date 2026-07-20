@@ -56,7 +56,7 @@ var listingCategoryContent = {
     eyebrow: 'PROPERTY LISTINGS',
     title: 'All Property Listings',
     description: 'Explore all available properties presented by Hilltop Properties.',
-    emptyMessage: 'No property listings are currently available.'
+    emptyMessage: 'No properties have been added yet. Add your first rental property.'
   }
 };
 
@@ -258,7 +258,7 @@ async function safeSelect(label, queryBuilder, fallback) {
   }
 }
 
-var PUBLIC_PROPERTY_FIELDS = 'id, reference_number, title, description, price, currency_code, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, branch_id, created_at';
+var PUBLIC_PROPERTY_FIELDS = 'id, reference_number, title, description, price, currency_code, billing_period, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, availability, branch_id, created_at';
 var LEGACY_PUBLIC_PROPERTY_FIELDS = 'id, reference_number, title, description, price, purpose, property_type, area, full_address, bedrooms, bathrooms, garages, square_metres, status, featured, branch_id, created_at';
 
 function isMissingCurrencyColumnError(error) {
@@ -270,7 +270,7 @@ function buildPublicPropertyQuery(supabase, fields) {
   return supabase
     .from('properties')
     .select(fields)
-    .in('status', ['Active', 'Under Offer'])
+    .eq('status', 'Active')
     .order('created_at', { ascending: false });
 }
 
@@ -278,7 +278,7 @@ async function selectPublicPropertyRows(supabase) {
   var response = await buildPublicPropertyQuery(supabase, PUBLIC_PROPERTY_FIELDS);
 
   if (isMissingCurrencyColumnError(response.error)) {
-    console.warn('[Hilltop] The property currency migration is not applied. Public properties are loading with the legacy ZMW fallback.');
+    console.warn('[Real estate management] The property currency migration is not applied. Public properties are using the USD display fallback.');
     response = await buildPublicPropertyQuery(supabase, LEGACY_PUBLIC_PROPERTY_FIELDS);
   }
 
@@ -370,19 +370,11 @@ async function loadPublicData() {
   publicState.propertyServices = results[8];
   publicState.exclusiveProperties = results[9] || [];
 
-  // Injected mock properties fallback if DB is empty
-  if (!publicState.properties.length && typeof getMockProperties === 'function') {
-    console.warn("Using local mock properties database for testing/screenshot rendering.");
-    publicState.properties = getMockProperties();
-    publicState.images = getMockPropertyImages();
-    publicState.branches = getMockBranches();
-  }
-
   renderWebsite();
   hideStatus();
 
   if (!publicState.properties.length) {
-    showStatus('No active public properties are available yet. Please check back soon or contact Hilltop Properties for current listings.', 'error');
+    showStatus('No properties have been added yet. Add your first rental property.', 'error');
   }
 }
 
@@ -452,14 +444,6 @@ async function loadListingsData() {
     publicState.images = results[1].data || [];
     publicState.branches = results[2].data || [];
 
-    // Injected mock properties fallback if DB is empty
-    if (!publicState.properties.length && typeof getMockProperties === 'function') {
-      console.warn("Using local mock properties database for testing/screenshot rendering.");
-      publicState.properties = getMockProperties();
-      publicState.images = getMockPropertyImages();
-      publicState.branches = getMockBranches();
-    }
-
     publicState.appSettings = {};
     (results[3].data || []).forEach(function (row) {
       publicState.appSettings[row.setting_key] = row.setting_value || {};
@@ -471,7 +455,7 @@ async function loadListingsData() {
     publicState.properties = [];
     publicState.images = [];
     renderListingsTypeFilter();
-    setListingsViewState('error', 'We could not load listings right now. Please try again shortly or contact Hilltop Properties.');
+    setListingsViewState('error', 'We could not load rentals right now. Please try again shortly.');
   }
 }
 
@@ -1721,7 +1705,7 @@ function validateEnquiryPayload(name, phone, email, branchId, notes, property) {
   if (!branchId) return 'No branch is available to receive this enquiry.';
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email address.';
   if (notes.length > 1000) return 'Message must be 1000 characters or less.';
-  if (property && ['Active', 'Under Offer'].indexOf(property.status) === -1) {
+  if (property && property.status !== 'Active') {
     return 'This property is not available for public enquiry.';
   }
   return '';

@@ -1,6 +1,6 @@
 -- ============================================================
--- HILLTOP PROPERTIES ZAMBIA - PROPERTY CURRENCY SUPPORT
--- Forward migration for ZMW and USD property listing prices.
+-- REAL ESTATE MANAGEMENT - PROPERTY CURRENCY SUPPORT
+-- Forward migration for USD monthly rental prices.
 --
 -- Run after schema.sql and the existing property RLS policies.
 -- Existing numeric prices are preserved without conversion.
@@ -9,19 +9,18 @@
 alter table public.properties
 add column if not exists currency_code text;
 
--- Existing and legacy records remain ZMW. Normalise a previously
--- added supported value before applying the strict constraint.
+-- The copied project's new database uses USD only.
 update public.properties
 set currency_code = upper(trim(currency_code))
 where currency_code is not null;
 
 update public.properties
-set currency_code = 'ZMW'
+set currency_code = 'USD'
 where currency_code is null
-   or currency_code not in ('ZMW', 'USD');
+   or currency_code <> 'USD';
 
 alter table public.properties
-alter column currency_code set default 'ZMW';
+alter column currency_code set default 'USD';
 
 alter table public.properties
 alter column currency_code set not null;
@@ -36,7 +35,7 @@ begin
   ) then
     alter table public.properties
     add constraint properties_currency_code_check
-    check (currency_code in ('ZMW', 'USD'));
+    check (currency_code = 'USD');
   end if;
 end;
 $$;
@@ -59,7 +58,7 @@ end;
 $$;
 
 comment on column public.properties.currency_code is
-'ISO-style listing currency code. Supported values are ZMW and USD; amounts are never converted automatically.';
+'Rental listing currency code. Real estate management uses USD only.';
 
 create index if not exists idx_properties_currency_code
 on public.properties (currency_code);

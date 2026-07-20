@@ -1,5 +1,5 @@
 /* ============================================================
-   HILLTOP PROPERTIES ZAMBIA - ADMIN DASHBOARD
+   REAL ESTATE MANAGEMENT - ADMIN DASHBOARD
    Phase 5A: read-only Supabase stats and recent activity.
    ============================================================ */
 
@@ -7,31 +7,18 @@
 /* -- 1. DEMO FALLBACK DATA ------------------------------------ */
 
 const demoStatsData = {
-  all: { activeProperties: 48, newLeads: 17, sold: 9, rented: 14 },
-  lusaka: { activeProperties: 30, newLeads: 11, sold: 6, rented: 8 },
-  livingstone: { activeProperties: 18, newLeads: 6, sold: 3, rented: 6 }
+  all: { activeProperties: 0, newLeads: 0, sold: 0, rented: 0 },
+  toney: { activeProperties: 0, newLeads: 0, sold: 0, rented: 0 }
 };
 
 const demoActivityData = {
-  all: [
-    { type: 'enquiry', text: 'New enquiry received for 3-bed house in Lusaka', time: '10 minutes ago', branch: 'Lusaka' },
-    { type: 'status', text: 'Agent John updated property status to Sold - HT-LSK-011', time: '42 minutes ago', branch: 'Lusaka' },
-    { type: 'property', text: 'Livingstone Branch added a new rental apartment - HT-LVN-007', time: '1 hour ago', branch: 'Livingstone' },
-    { type: 'followup', text: 'Follow-up scheduled for client Mary Banda', time: '2 hours ago', branch: 'Lusaka' }
-  ],
-  lusaka: [
-    { type: 'enquiry', text: 'New enquiry received for 3-bed house in Lusaka', time: '10 minutes ago', branch: 'Lusaka' },
-    { type: 'status', text: 'Agent John updated property status to Sold - HT-LSK-011', time: '42 minutes ago', branch: 'Lusaka' }
-  ],
-  livingstone: [
-    { type: 'property', text: 'Livingstone Branch added a new rental apartment - HT-LVN-007', time: '1 hour ago', branch: 'Livingstone' }
-  ]
+  all: [],
+  toney: []
 };
 
 const branchLabels = {
-  all: 'All Branches',
-  lusaka: 'Lusaka Branch',
-  livingstone: 'Livingstone Branch'
+  all: 'All Locations',
+  toney: 'Toney, Alabama'
 };
 
 const tagLabels = {
@@ -259,8 +246,8 @@ function calculateDashboardStats() {
   return {
     activeProperties: properties.filter(function(property) { return property.status === 'Active'; }).length,
     newLeads: leads.filter(function(lead) { return isDateWithinLastSevenDays(lead.created_at); }).length,
-    sold: properties.filter(function(property) { return property.status === 'Sold'; }).length,
-    rented: properties.filter(function(property) { return property.status === 'Let / Rented'; }).length
+    sold: properties.filter(function(property) { return property.status === 'Under Offer'; }).length,
+    rented: properties.filter(function(property) { return property.status === 'Let'; }).length
   };
 }
 
